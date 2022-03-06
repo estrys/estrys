@@ -11,6 +11,7 @@ import (
 	"github.com/estrys/estrys/internal"
 	"github.com/estrys/estrys/internal/config"
 	"github.com/estrys/estrys/internal/dic"
+	"github.com/estrys/estrys/internal/domain"
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/worker"
 )
@@ -35,6 +36,13 @@ func main() {
 				log.WithError(err).Error("worker failed")
 			}
 		}()
+	}
+
+	userService := dic.GetService[domain.UserService]()
+	err = userService.BatchCreateUsers(appContext, conf.TwitterAllowedUsers)
+	if err != nil {
+		log.WithError(err).Error("User initialization failed")
+		os.Exit(1)
 	}
 
 	err = internal.StartServer(appContext, internal.Config{Address: conf.Address})
