@@ -1,12 +1,14 @@
 package voter
 
 import (
-	"github.com/estrys/estrys/internal/authorization/attributes"
+	"net/url"
+	"testing"
+
 	"github.com/go-fed/activity/streams"
 	"github.com/go-fed/activity/streams/vocab"
 	"github.com/stretchr/testify/require"
-	"net/url"
-	"testing"
+
+	"github.com/estrys/estrys/internal/authorization/attributes"
 )
 
 func Test_activityVoter_Vote_CanFollow(t *testing.T) {
