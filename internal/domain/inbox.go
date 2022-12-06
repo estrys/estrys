@@ -25,9 +25,6 @@ import (
 	"github.com/estrys/estrys/internal/worker/tasks"
 )
 
-var ErrFollowMismatchDomain = errors.New("unable to follow an user outside this instance")
-var ErrUserDoesNotExist = errors.New("user does not exist")
-
 type UnsuportedUndoObjectError struct {
 	ty vocab.Type
 }

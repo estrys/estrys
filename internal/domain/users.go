@@ -46,20 +46,19 @@ func NewUserService(
 	}
 }
 
-// GetFullUser This method return a User from both database and twitter data
-// If the user does not exist in our db, generate a key and create it.
+// GetFullUser This method return a User from both database and twitter data.
 func (u *userService) GetFullUser(ctx context.Context, username string) (*domainmodels.User, error) {
+	user, err := u.repo.Get(ctx, username)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserDoesNotExist
+		}
+		return nil, err
+	}
+
 	twitterUser, err := u.twitterClient.GetUser(ctx, username)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to fetch twitter user info")
-	}
-
-	user, err := u.getOrCreate(ctx, CreateUserRequest{
-		Username:  username,
-		CreatedAt: twitterUser.CreatedAt,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create user")
 	}
 
 	privateKey, err := x509.ParsePKCS1PrivateKey(user.PrivateKey)
@@ -84,7 +83,7 @@ func (u *userService) GetFullUser(ctx context.Context, username string) (*domain
 	return domainUser, nil
 }
 
-func (u *userService) getOrCreate(ctx context.Context, request CreateUserRequest) (*models.User, error) {
+func (u *userService) CreateUser(ctx context.Context, request CreateUserRequest) (*models.User, error) {
 	user, err := u.repo.Get(ctx, request.Username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "unable to fetch user from db")

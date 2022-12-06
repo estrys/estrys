@@ -128,6 +128,18 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 			GoldenFile: "user/ok",
 		},
 		{
+			Name: "user no found",
+			RequestOptions: []tests.RequestOption{
+				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
+			},
+			Mock: func(t *testing.T) {
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
+			},
+			StatusCode: http.StatusNotFound,
+		},
+		{
 			Name: "twitter user no found",
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
@@ -140,6 +152,10 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
 					Times(1).Return(nil, cache.ErrMiss)
 				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(
@@ -181,6 +197,10 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
 					Times(1).Return(nil, cache.ErrMiss)
 				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(
@@ -235,16 +255,14 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 			GoldenFile: "followers/ok",
 		},
 		{
-			Name: "twitter user no found",
+			Name: "user no found",
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
-				fakeTwitterClient.On("GetUser", mock.Anything, fakeUserName).Return(
-					nil, twitter.UsernameNotFoundError{fakeUserName},
-				)
-				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
 			StatusCode: http.StatusNotFound,
 		},
@@ -261,6 +279,10 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
 					Times(1).Return(nil, cache.ErrMiss)
 				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(
@@ -320,11 +342,9 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
-				fakeTwitterClient.On("GetUser", mock.Anything, fakeUserName).Return(
-					nil, twitter.UsernameNotFoundError{fakeUserName},
-				)
-				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
 			StatusCode: http.StatusNotFound,
 		},
@@ -341,6 +361,10 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
 					Times(1).Return(nil, cache.ErrMiss)
 				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(
@@ -400,11 +424,9 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
-				fakeTwitterClient.On("GetUser", mock.Anything, fakeUserName).Return(
-					nil, twitter.UsernameNotFoundError{fakeUserName},
-				)
-				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
 			StatusCode: http.StatusNotFound,
 		},
@@ -421,6 +443,10 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
 					Times(1).Return(nil, cache.ErrMiss)
 				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+
+				fakeUserRepo := mocksuser.NewUserRepository(t)
+				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
+				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(

@@ -27,7 +27,7 @@ func HandleUser(responseWriter http.ResponseWriter, request *http.Request) {
 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
-		if errors.As(err, &twitterUserNotFound) {
+		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			responseWriter.WriteHeader(http.StatusNotFound)
 		} else {
 			responseWriter.WriteHeader(http.StatusInternalServerError)
@@ -62,7 +62,7 @@ func HandleFollowing(responseWriter http.ResponseWriter, request *http.Request) 
 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
-		if errors.As(err, &twitterUserNotFound) {
+		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			responseWriter.WriteHeader(http.StatusNotFound)
 		} else {
 			responseWriter.WriteHeader(http.StatusInternalServerError)
@@ -97,7 +97,7 @@ func HandleFollowers(responseWriter http.ResponseWriter, request *http.Request) 
 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
-		if errors.As(err, &twitterUserNotFound) {
+		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			responseWriter.WriteHeader(http.StatusNotFound)
 		} else {
 			responseWriter.WriteHeader(http.StatusInternalServerError)
@@ -132,7 +132,7 @@ func HandleOutbox(responseWriter http.ResponseWriter, request *http.Request) {
 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
-		if errors.As(err, &twitterUserNotFound) {
+		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			responseWriter.WriteHeader(http.StatusNotFound)
 		} else {
 			responseWriter.WriteHeader(http.StatusInternalServerError)
