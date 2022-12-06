@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://w3id.org/security/v1",
+    "https://www.w3.org/ns/activitystreams"
+  ],
+  "followers": "https://example.com/users/foobar/followers",
+  "following": "https://example.com/users/foobar/following",
+  "icon": {
+    "type": "Image",
+    "url": "https://example.com/image.jpg"
+  },
+  "id": "https://example.com/users/foobar",
+  "inbox": "https://elie.eu.ngrok.io/users/smaftoul/inbox",
+  "name": "Foo Bar",
+  "outbox": "https://example.com/users/foobar/outbox",
+  "preferredUsername": "foobar",
+  "publicKey": {
+    "id": "https://example.com/users/foobar",
+    "owner": "https://example.com/users/foobar",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrvuTlsqAZrz8EhEwIWmbhe+o/\n9LTMRHbh7zFFUxgQfKPcnfHfbWnlWdpa8f7efMYz+LJjjzZ86PmEJPPHkDmCNkFg\nYLtsCdT/44+eOQhs7rPcz8xYWe9K8yBxKkGLS4h6i5i3Z6vGQiy0ZdZi93HWtApJ\nb2jhSuAEBkEX0ITNJQIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "published": "2011-05-05T13:21:56Z",
+  "summary": "This is a fake twitter user",
+  "type": "Service"
+}

@@ -1,0 +1,29 @@
+version: "3.4"
+services:
+  estrys: &app
+    build:
+      target: dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/go/src/app
+
+# Uncomment if you do want to spawn workers in a separated process
+# You may use DISABLE_EMBED_WORKER env var
+#  worker:
+#    <<: *app
+#    build:
+#      target: worker-dev
+#    ports: []
+
+# Uncomment if you want to enable the web ui to manage backgrounds jobs
+#  asynqmon:
+#    image: hibiken/asynqmon
+#    environment:
+#      REDIS_ADDR: "redis:6379"
+#    ports:
+#      - "8888:8080"
+
+  db:
+    ports:
+      - "5432:5432"

@@ -1,0 +1,6 @@
+/.env.local
+/.docker
+/docker-compose.override.yml
+/estrys
+/coverage.out
+/tmp

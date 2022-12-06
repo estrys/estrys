@@ -1,0 +1,5 @@
+/.bin
+/Dockerfile
+/.dockerignore
+/docker-compose*
+/.env.local

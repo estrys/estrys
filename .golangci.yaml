@@ -1,0 +1,54 @@
+run:
+  timeout: 5m
+  go: '1.19'
+  tests: false
+  skip-dirs:
+    - internal/models
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/estrys/estrys
+  gci:
+    sections:
+      - standard
+      - prefix(github.com/estrys/estrys)
+      - default
+  varnamelen:
+    min-name-length: 2
+  cyclop:
+    max-complexity: 15
+  revive:
+    rules:
+      - name: unexported-return
+        disabled: true
+linters:
+  enable-all: true
+
+  disable:
+    - gomoddirectives # disable once the PR is fixed
+    - funlen
+    - dupl
+    - ireturn #Buggy
+    # Disable not really relevant or aggressive ones
+    - wrapcheck
+    - godox
+    - gofumpt
+    - exhaustruct
+    - wsl
+    - nlreturn
+    - gomnd
+    # Disable deprecated ones
+    - exhaustivestruct
+    - nosnakecase
+    - ifshort
+    - golint
+    - scopelint
+    - structcheck
+    - varcheck
+    - deadcode
+    - interfacer
+    - maligned
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - wastedassign

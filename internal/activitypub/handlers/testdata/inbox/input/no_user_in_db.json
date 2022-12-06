@@ -1,0 +1,7 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://example.com/bdd01ced-d657-4847-a266-2c43e1cd8dc5",
+  "type": "Follow",
+  "actor": "https://example.com/users/actor",
+  "object": "https://example.com/users/notfound"
+}

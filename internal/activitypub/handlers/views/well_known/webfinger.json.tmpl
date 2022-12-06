@@ -1,0 +1,14 @@
+{
+  "subject": "acct:{{ .user.Username }}@{{ .domain.Host }}",
+  "aliases": [
+    "{{ .domain.String }}/@{{ .user.Username }}",
+    "{{ .domain.String }}/users/{{ .user.Username }}"
+  ],
+  "links": [
+    {
+      "rel": "self",
+      "type": "application/activity+json",
+      "href": "{{ .domain.String }}/users/{{ .user.Username }}"
+    }
+  ]
+}

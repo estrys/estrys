@@ -1,0 +1,6 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "https://example.com/users/foobar/following",
+  "totalItems": 1337,
+  "type": "OrderedCollection"
+}

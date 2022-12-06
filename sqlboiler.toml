@@ -1,0 +1,11 @@
+output   = "internal/models"
+wipe     = true
+no-tests = true
+add-enum-types = true
+[psql]
+    host      = "localhost"
+    dbname    = "estrys"
+    user      = "estrys"
+    pass      = "estrys"
+    sslmode   = "disable"
+    blacklist = ["schema_migrations"]
