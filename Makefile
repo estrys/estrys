@@ -39,7 +39,7 @@ lint:
 
 .PHONY: test
 test:
-	go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+	go test -v -race -coverprofile=coverage.out -coverpkg=./internal/... ./internal/...
 
 .PHONY: build
 build:

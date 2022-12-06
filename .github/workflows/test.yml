@@ -47,5 +47,3 @@ jobs:
         uses: codecov/codecov-action@v3
         # Only upload coverage once
         if:  ${{ matrix.os == 'ubuntu-latest' && matrix.go-version == '1.19.x' }}
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
