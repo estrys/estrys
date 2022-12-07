@@ -37,6 +37,7 @@ func (u UsernameNotFoundError) Error() string {
 
 type User struct {
 	Username        string
+	ID              string
 	Name            string
 	Description     string
 	ProfileImageURL *url.URL
@@ -53,11 +54,16 @@ type Backend interface {
 		usernames []string,
 		opts twitter.UserLookupOpts,
 	) (*twitter.UserLookupResponse, error)
+	UserTweetTimeline(
+		ctx context.Context,
+		userID string,
+		opts twitter.UserTweetTimelineOpts,
+	) (*twitter.UserTweetTimelineResponse, error)
 }
 
 //go:generate mockery --name=TwitterClient
 type TwitterClient interface {
-	// GetTweets(ids []string) ([]*twitter.TweetObj, error)
+	GetTweets(context.Context, string, twitter.UserTweetTimelineOpts) (*twitter.UserTweetTimelineResponse, error)
 	// StreamTweets(callback func(*twitter.TweetMessage)) error
 
 	GetUser(ctx context.Context, username string) (*User, error)
@@ -77,24 +83,22 @@ func NewClient(log logger.Logger, cache cache.Cache[User], backend Backend) *twi
 	}
 }
 
-//nolint:gocritic
-//func (c *twitterClient) GetTweets(ids []string) ([]*twitter.TweetObj, error) {
-//	tweets, err := c.twitter.TweetLookup(
-//		context.TODO(),
-//		ids,
-//		twitter.TweetLookupOpts{
-//			TweetFields: []twitter.TweetField{
-//				twitter.TweetFieldReferencedTweets,
-//			},
-//		},
-//	)
-//
-//	if err != nil {
-//		return nil, errors.Wrap(err, "unable to fetch tweets")
-//	}
-//
-//	return tweets.Raw.Tweets, nil
-//}
+func (c *twitterClient) GetTweets(
+	ctx context.Context,
+	id string,
+	opt twitter.UserTweetTimelineOpts,
+) (*twitter.UserTweetTimelineResponse, error) {
+	timelineResponse, err := c.twitter.UserTweetTimeline(
+		ctx,
+		id,
+		opt,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to fetch tweets")
+	}
+
+	return timelineResponse, nil
+}
 
 func (c *twitterClient) GetUser(ctx context.Context, username string) (*User, error) {
 	cacheKey := strings.Join([]string{"twitter", "user", username}, "/")
@@ -147,6 +151,7 @@ func (c *twitterClient) GetUser(ctx context.Context, username string) (*User, er
 
 	user := &User{
 		Username:        username,
+		ID:              lookup.Raw.Users[0].ID,
 		Name:            lookup.Raw.Users[0].Name,
 		Description:     lookup.Raw.Users[0].Description,
 		ProfileImageURL: profileImage,

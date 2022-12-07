@@ -115,5 +115,11 @@ func BuildContainer() error {
 		conf,
 	))
 
+	_ = dic.Register[twitter.TwitterPoller](twitter.NewPoller(
+		dic.GetService[logger.Logger](),
+		dic.GetService[twitter.TwitterClient](),
+		dic.GetService[repository.UserRepository](),
+	))
+
 	return nil
 }

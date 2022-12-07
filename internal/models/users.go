@@ -24,6 +24,7 @@ import (
 // User is an object representing the database table.
 type User struct {
 	Username   string    `boil:"username" json:"username" toml:"username" yaml:"username"`
+	ID         string    `boil:"id" json:"id" toml:"id" yaml:"id"`
 	PrivateKey []byte    `boil:"private_key" json:"private_key" toml:"private_key" yaml:"private_key"`
 	CreatedAt  time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
@@ -33,20 +34,24 @@ type User struct {
 
 var UserColumns = struct {
 	Username   string
+	ID         string
 	PrivateKey string
 	CreatedAt  string
 }{
 	Username:   "username",
+	ID:         "id",
 	PrivateKey: "private_key",
 	CreatedAt:  "created_at",
 }
 
 var UserTableColumns = struct {
 	Username   string
+	ID         string
 	PrivateKey string
 	CreatedAt  string
 }{
 	Username:   "users.username",
+	ID:         "users.id",
 	PrivateKey: "users.private_key",
 	CreatedAt:  "users.created_at",
 }
@@ -76,10 +81,12 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 
 var UserWhere = struct {
 	Username   whereHelperstring
+	ID         whereHelperstring
 	PrivateKey whereHelper__byte
 	CreatedAt  whereHelpertime_Time
 }{
 	Username:   whereHelperstring{field: "\"users\".\"username\""},
+	ID:         whereHelperstring{field: "\"users\".\"id\""},
 	PrivateKey: whereHelper__byte{field: "\"users\".\"private_key\""},
 	CreatedAt:  whereHelpertime_Time{field: "\"users\".\"created_at\""},
 }
@@ -112,8 +119,8 @@ func (r *userR) GetActors() ActorSlice {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"username", "private_key", "created_at"}
-	userColumnsWithoutDefault = []string{"username", "private_key", "created_at"}
+	userAllColumns            = []string{"username", "id", "private_key", "created_at"}
+	userColumnsWithoutDefault = []string{"username", "id", "private_key", "created_at"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"username"}
 	userGeneratedColumns      = []string{}

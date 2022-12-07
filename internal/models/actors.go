@@ -479,7 +479,7 @@ func (actorL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bo
 	}
 
 	query := NewQuery(
-		qm.Select("\"users\".\"username\", \"users\".\"private_key\", \"users\".\"created_at\", \"a\".\"actor\""),
+		qm.Select("\"users\".\"username\", \"users\".\"id\", \"users\".\"private_key\", \"users\".\"created_at\", \"a\".\"actor\""),
 		qm.From("\"users\""),
 		qm.InnerJoin("\"followers\" as \"a\" on \"users\".\"username\" = \"a\".\"user\""),
 		qm.WhereIn("\"a\".\"actor\" in ?", args...),
@@ -500,7 +500,7 @@ func (actorL) LoadUsers(ctx context.Context, e boil.ContextExecutor, singular bo
 		one := new(User)
 		var localJoinCol string
 
-		err = results.Scan(&one.Username, &one.PrivateKey, &one.CreatedAt, &localJoinCol)
+		err = results.Scan(&one.Username, &one.ID, &one.PrivateKey, &one.CreatedAt, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for users")
 		}

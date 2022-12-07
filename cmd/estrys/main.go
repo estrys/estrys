@@ -13,6 +13,7 @@ import (
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/domain"
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/twitter"
 	"github.com/estrys/estrys/internal/worker"
 )
 
@@ -44,6 +45,14 @@ func main() {
 		log.WithError(err).Error("User initialization failed")
 		os.Exit(1)
 	}
+
+	twp := dic.GetService[twitter.TwitterPoller]()
+	go func() {
+		err := twp.Start(appContext)
+		if err != nil {
+			log.Fatalf("Could not start poller: %s", err)
+		}
+	}()
 
 	err = internal.StartServer(appContext, internal.Config{Address: conf.Address})
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {

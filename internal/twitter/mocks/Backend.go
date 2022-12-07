@@ -38,6 +38,29 @@ func (_m *Backend) UserNameLookup(ctx context.Context, usernames []string, opts 
 	return r0, r1
 }
 
+// UserTweetTimeline provides a mock function with given fields: ctx, userID, opts
+func (_m *Backend) UserTweetTimeline(ctx context.Context, userID string, opts twitter.UserTweetTimelineOpts) (*twitter.UserTweetTimelineResponse, error) {
+	ret := _m.Called(ctx, userID, opts)
+
+	var r0 *twitter.UserTweetTimelineResponse
+	if rf, ok := ret.Get(0).(func(context.Context, string, twitter.UserTweetTimelineOpts) *twitter.UserTweetTimelineResponse); ok {
+		r0 = rf(ctx, userID, opts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*twitter.UserTweetTimelineResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, twitter.UserTweetTimelineOpts) error); ok {
+		r1 = rf(ctx, userID, opts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 type mockConstructorTestingTNewBackend interface {
 	mock.TestingT
 	Cleanup(func())
