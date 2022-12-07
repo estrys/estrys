@@ -227,7 +227,7 @@ func (a *inboxService) UnFollow(ctx context.Context, act vocab.ActivityStreamsUn
 		return errors.Wrap(err, "unable to unfollow user")
 	}
 
-	logrus.WithFields(logrus.Fields{
+	a.log.WithFields(logrus.Fields{
 		"actor":  actorURL.String(),
 		"object": userURL.String(),
 	}).Info("successfully handled unfollow request")
