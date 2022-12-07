@@ -108,6 +108,7 @@ func (u *userService) getOrCreate(ctx context.Context, username string) (*models
 		}
 		user, err = u.repo.CreateUser(ctx, repository.CreateUserRequest{
 			Username:   username,
+			ID:         twitterUser.ID,
 			CreatedAt:  twitterUser.CreatedAt,
 			PrivateKey: privateKey,
 		})

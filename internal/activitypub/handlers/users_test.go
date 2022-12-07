@@ -100,6 +100,7 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 					Raw: &gotwitter.UserRaw{
 						Users: []*gotwitter.UserObj{
 							{
+								ID:              "12345",
 								Name:            "Foo Bar",
 								CreatedAt:       fakeUserCreatedAtStr,
 								Description:     "This is a fake twitter user",

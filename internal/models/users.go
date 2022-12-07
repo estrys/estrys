@@ -18,14 +18,16 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"github.com/volatiletech/sqlboiler/v4/queries/qmhelper"
+	"github.com/volatiletech/sqlboiler/v4/types"
 	"github.com/volatiletech/strmangle"
 )
 
 // User is an object representing the database table.
 type User struct {
-	Username   string    `boil:"username" json:"username" toml:"username" yaml:"username"`
-	PrivateKey []byte    `boil:"private_key" json:"private_key" toml:"private_key" yaml:"private_key"`
-	CreatedAt  time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	Username   string        `boil:"username" json:"username" toml:"username" yaml:"username"`
+	ID         types.Decimal `boil:"id" json:"id" toml:"id" yaml:"id"`
+	PrivateKey []byte        `boil:"private_key" json:"private_key" toml:"private_key" yaml:"private_key"`
+	CreatedAt  time.Time     `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -33,25 +35,50 @@ type User struct {
 
 var UserColumns = struct {
 	Username   string
+	ID         string
 	PrivateKey string
 	CreatedAt  string
 }{
 	Username:   "username",
+	ID:         "id",
 	PrivateKey: "private_key",
 	CreatedAt:  "created_at",
 }
 
 var UserTableColumns = struct {
 	Username   string
+	ID         string
 	PrivateKey string
 	CreatedAt  string
 }{
 	Username:   "users.username",
+	ID:         "users.id",
 	PrivateKey: "users.private_key",
 	CreatedAt:  "users.created_at",
 }
 
 // Generated where
+
+type whereHelpertypes_Decimal struct{ field string }
+
+func (w whereHelpertypes_Decimal) EQ(x types.Decimal) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertypes_Decimal) NEQ(x types.Decimal) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertypes_Decimal) LT(x types.Decimal) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertypes_Decimal) LTE(x types.Decimal) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertypes_Decimal) GT(x types.Decimal) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertypes_Decimal) GTE(x types.Decimal) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
 
 type whereHelpertime_Time struct{ field string }
 
@@ -76,10 +103,12 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 
 var UserWhere = struct {
 	Username   whereHelperstring
+	ID         whereHelpertypes_Decimal
 	PrivateKey whereHelper__byte
 	CreatedAt  whereHelpertime_Time
 }{
 	Username:   whereHelperstring{field: "\"users\".\"username\""},
+	ID:         whereHelpertypes_Decimal{field: "\"users\".\"id\""},
 	PrivateKey: whereHelper__byte{field: "\"users\".\"private_key\""},
 	CreatedAt:  whereHelpertime_Time{field: "\"users\".\"created_at\""},
 }
@@ -112,8 +141,8 @@ func (r *userR) GetActors() ActorSlice {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"username", "private_key", "created_at"}
-	userColumnsWithoutDefault = []string{"username", "private_key", "created_at"}
+	userAllColumns            = []string{"username", "id", "private_key", "created_at"}
+	userColumnsWithoutDefault = []string{"username", "id", "private_key", "created_at"}
 	userColumnsWithDefault    = []string{}
 	userPrimaryKeyColumns     = []string{"username"}
 	userGeneratedColumns      = []string{}
