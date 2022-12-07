@@ -21,6 +21,7 @@ type Config struct {
 	DisableHTTPSignatureVerify bool          `mapstructure:"disable_http_signature_verify"`
 	DisableEmbedWorker         bool          `mapstructure:"disable_embed_worker"`
 	AllowedUsers               []string      `mapstructure:"allowed_users"`
+	TwitterAllowedUsers        []string      `mapstructure:"twitter_allowed_users"`
 }
 
 type Loader interface {

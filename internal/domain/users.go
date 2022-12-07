@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/x509"
 	"database/sql"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -16,13 +15,9 @@ import (
 	"github.com/estrys/estrys/internal/twitter"
 )
 
-type CreateUserRequest struct {
-	Username  string
-	CreatedAt time.Time
-}
-
 type UserService interface {
 	GetFullUser(context.Context, string) (*domainmodels.User, error)
+	BatchCreateUsers(ctx context.Context, allowedTwitterUsers []string) error
 }
 
 type userService struct {
@@ -83,26 +78,43 @@ func (u *userService) GetFullUser(ctx context.Context, username string) (*domain
 	return domainUser, nil
 }
 
-func (u *userService) CreateUser(ctx context.Context, request CreateUserRequest) (*models.User, error) {
-	user, err := u.repo.Get(ctx, request.Username)
+func (u *userService) BatchCreateUsers(ctx context.Context, allowedTwitterUsers []string) error {
+	for _, twitterUserName := range allowedTwitterUsers {
+		_, err := u.getOrCreate(ctx, twitterUserName)
+		if err != nil {
+			return errors.Wrap(err, "unable to batch create user")
+		}
+	}
+	return nil
+}
+
+func (u *userService) getOrCreate(ctx context.Context, username string) (*models.User, error) {
+	user, err := u.repo.Get(ctx, username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.Wrap(err, "unable to fetch user from db")
 	}
 	if user == nil {
-		u.log.WithField("username", request.Username).Debug("user not found in database, creating it")
+		twitterUser, err := u.twitterClient.GetUser(ctx, username)
+		if err != nil && errors.Is(err, twitter.UsernameNotFoundError{Username: username}) {
+			return nil, &TwitterUserDoesNotExistError{username}
+		}
+		if err != nil {
+			return nil, err
+		}
+		u.log.WithField("username", username).Debug("user not found in database, creating it")
 		privateKey, err := u.keyManager.GenerateKey()
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to generate private key for user")
 		}
 		user, err = u.repo.CreateUser(ctx, repository.CreateUserRequest{
-			Username:   request.Username,
-			CreatedAt:  request.CreatedAt,
+			Username:   username,
+			CreatedAt:  twitterUser.CreatedAt,
 			PrivateKey: privateKey,
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to create user")
 		}
-		u.log.WithField("username", request.Username).Debug("new user created with new keypair")
+		u.log.WithField("username", username).Debug("new user created with new keypair")
 	}
 
 	return user, nil
