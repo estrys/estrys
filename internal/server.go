@@ -43,9 +43,11 @@ func StartServer(ctx context.Context, cfg Config) error {
 
 	go func() {
 		err := srv.ListenAndServe()
-		if errors.Is(err, http.ErrServerClosed) {
+		if !errors.Is(err, http.ErrServerClosed) {
 			log.WithError(err).Error("server failed")
+			return
 		}
+		log.Info("server stopped")
 	}()
 
 	<-ctx.Done()
