@@ -31,11 +31,11 @@ const (
 )
 
 type InboxNotAcceptedError struct {
-	statusCode int
+	StatusCode int
 }
 
 func (e *InboxNotAcceptedError) Error() string {
-	return fmt.Sprintf("%d", e.statusCode)
+	return fmt.Sprintf("error posting to inbox %d", e.StatusCode)
 }
 
 type activityContext struct {
@@ -80,6 +80,7 @@ func (t *httpSigRoundTripper) RoundTrip(request *http.Request) (*http.Response, 
 	return http.DefaultTransport.RoundTrip(request) //nolint:wrapcheck
 }
 
+//go:generate mockery --name=ActivityPubClient
 type ActivityPubClient interface {
 	PostInbox(ctx context.Context, to *models.Actor, from *models.User, act pub.Activity) error
 }
@@ -89,7 +90,7 @@ type activityPubClient struct {
 	log    logger.Logger
 }
 
-func NewClient(
+func NewActivityPubClient(
 	client *http.Client,
 	log logger.Logger,
 	urlGenerator urlgenerator.URLGenerator,
@@ -155,7 +156,7 @@ func (c *activityPubClient) PostInbox(
 	if response.StatusCode != http.StatusAccepted {
 		respBody, _ := io.ReadAll(response.Body)
 		logrus.WithField("response", string(respBody)).Trace("unable to post to inbox")
-		return &InboxNotAcceptedError{statusCode: response.StatusCode}
+		return &InboxNotAcceptedError{StatusCode: response.StatusCode}
 	}
 
 	return nil
