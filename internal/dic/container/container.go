@@ -73,7 +73,7 @@ func BuildContainer() error {
 		dic.GetService[cache.Cache[twitter.User]](),
 		dic.GetService[twitter.Backend](),
 	))
-	activityPubClient, err := activitypubclient.NewClient(
+	activityPubClient, err := activitypubclient.NewActivityPubClient(
 		&http.Client{},
 		dic.GetService[logger.Logger](),
 		dic.GetService[urlgenerator.URLGenerator](),

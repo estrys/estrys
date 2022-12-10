@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"time"
 
 	"github.com/go-fed/activity/streams"
@@ -90,8 +91,12 @@ func HandleAcceptFollow(ctx context.Context, task *asynq.Task) error {
 	err = activityPubClient.PostInbox(ctx, actor, user, acceptFollow)
 	if err != nil {
 		var isNotAcceptedErr *activitypubclient.InboxNotAcceptedError
-		if errors.As(err, isNotAcceptedErr) {
-			return errors.Wrapf(err, "post to inbox was not accepted: %s", asynq.SkipRetry)
+		if errors.As(err, &isNotAcceptedErr) {
+			// If the error is not on our side, let's retry
+			if isNotAcceptedErr.StatusCode < http.StatusInternalServerError {
+				err = errors.Wrap(err, asynq.SkipRetry.Error())
+			}
+			return errors.Wrapf(err, "post to inbox was not accepted")
 		}
 		return errors.Wrapf(err, "unable to accept follow request: %s", asynq.SkipRetry)
 	}
