@@ -2,7 +2,6 @@ package twitter
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/g8rswimmer/go-twitter/v2"
@@ -31,8 +30,8 @@ var (
 )
 
 const (
-	MaxRequests = 1500
-	PeriodMins  = 15
+	maxRequests = 1500
+	periodMins  = 15
 )
 
 func NewPoller(
@@ -50,7 +49,7 @@ func NewPoller(
 
 func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 	var err error
-	c.users, err = c.repo.GetWithoutActor(ctx)
+	c.users, err = c.repo.GetWithFollowers(ctx)
 	if err != nil {
 		return err
 	}
@@ -64,17 +63,18 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 	if len(c.users) == c.userIndex {
 		c.log.WithField("index", c.userIndex).Trace("polled all twitter users from list, restarting ...")
 		c.userIndex = 0
+		c.RefreshUserList(ctx)
 	}
 	user := c.users[c.userIndex]
 	userLogger := c.log.WithField("user", user.Username)
-	idu64, _ := user.ID.Uint64()
-	id := strconv.FormatUint(idu64, 10)
 	opt := twitter.UserTweetTimelineOpts{}
 	if cursor, exist := c.userCursors[c.users[c.userIndex].Username]; exist {
 		opt.SinceID = cursor
+	} else {
+		opt.StartTime = time.Now()
 	}
 	userLogger.WithField("cursor", opt.SinceID).Trace("fetching user tweets")
-	tweets, err := c.twitter.GetTweets(ctx, id, opt)
+	tweets, err := c.twitter.GetTweets(ctx, user.ID, opt)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (c *twitterPoller) Start(ctx context.Context) error {
 
 	c.log.Debug("we have users to poll")
 
-	ticker := time.NewTicker(PeriodMins * time.Minute / MaxRequests)
+	ticker := time.NewTicker(periodMins * time.Minute / maxRequests)
 	for {
 		select {
 		case <-ticker.C:

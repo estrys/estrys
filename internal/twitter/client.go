@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -38,7 +37,7 @@ func (u UsernameNotFoundError) Error() string {
 
 type User struct {
 	Username        string
-	ID              uint64
+	ID              string
 	Name            string
 	Description     string
 	ProfileImageURL *url.URL
@@ -150,14 +149,9 @@ func (c *twitterClient) GetUser(ctx context.Context, username string) (*User, er
 		return nil, errors.Wrap(err, "unable to parse profile image url")
 	}
 
-	ID, err := strconv.ParseUint(lookup.Raw.Users[0].ID, 10, 64)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse twitter ID")
-	}
-
 	user := &User{
 		Username:        username,
-		ID:              ID,
+		ID:              lookup.Raw.Users[0].ID,
 		Name:            lookup.Raw.Users[0].Name,
 		Description:     lookup.Raw.Users[0].Description,
 		ProfileImageURL: profileImage,

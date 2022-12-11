@@ -76,8 +76,8 @@ func (_m *UserRepository) Get(_a0 context.Context, _a1 string) (*models.User, er
 	return r0, r1
 }
 
-// GetWithoutActor provides a mock function with given fields: ctx
-func (_m *UserRepository) GetWithoutActor(ctx context.Context) (models.UserSlice, error) {
+// GetWithFollowers provides a mock function with given fields: ctx
+func (_m *UserRepository) GetWithFollowers(ctx context.Context) (models.UserSlice, error) {
 	ret := _m.Called(ctx)
 
 	var r0 models.UserSlice

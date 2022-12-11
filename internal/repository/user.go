@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ericlagergren/decimal"
 	"github.com/pkg/errors"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"github.com/volatiletech/sqlboiler/v4/types"
 
 	"github.com/estrys/estrys/internal/database"
 	"github.com/estrys/estrys/internal/models"
@@ -19,7 +17,7 @@ import (
 
 type CreateUserRequest struct {
 	Username   string
-	ID         uint64
+	ID         string
 	CreatedAt  time.Time
 	PrivateKey *rsa.PrivateKey
 }
@@ -30,7 +28,7 @@ type UserRepository interface {
 	Follow(context.Context, *models.User, *models.Actor) error
 	UnFollow(context.Context, *models.User, *models.Actor) error
 	CreateUser(context.Context, CreateUserRequest) (*models.User, error)
-	GetWithoutActor(ctx context.Context) (models.UserSlice, error)
+	GetWithFollowers(ctx context.Context) (models.UserSlice, error)
 }
 
 type userRepo struct {
@@ -43,11 +41,9 @@ func NewUserRepository(database database.Database) *userRepo {
 
 func (u *userRepo) CreateUser(ctx context.Context, input CreateUserRequest) (*models.User, error) {
 	privKey := x509.MarshalPKCS1PrivateKey(input.PrivateKey)
-	ID := decimal.Big{}
-	ID.SetUint64(input.ID)
 	user := &models.User{
 		Username:   input.Username,
-		ID:         types.NewDecimal(&ID),
+		ID:         input.ID,
 		PrivateKey: privKey,
 		CreatedAt:  input.CreatedAt,
 	}
@@ -84,7 +80,7 @@ func (u *userRepo) Get(ctx context.Context, username string) (*models.User, erro
 	return user, nil
 }
 
-func (u *userRepo) GetWithoutActor(ctx context.Context) (models.UserSlice, error) {
+func (u *userRepo) GetWithFollowers(ctx context.Context) (models.UserSlice, error) {
 	mods := []qm.QueryMod{
 		qm.InnerJoin(fmt.Sprintf("%[1]s on %[1]s.user = %s",
 			models.TableNames.Followers,
