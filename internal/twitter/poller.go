@@ -63,7 +63,10 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 	if len(c.users) == c.userIndex {
 		c.log.WithField("index", c.userIndex).Trace("polled all twitter users from list, restarting ...")
 		c.userIndex = 0
-		c.RefreshUserList(ctx)
+		err := c.RefreshUserList(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	user := c.users[c.userIndex]
 	userLogger := c.log.WithField("user", user.Username)
