@@ -19,15 +19,10 @@ import (
 
 func main() {
 	appContext, _, err := cmd.Bootstrap()
-	log := dic.GetService[logger.Logger]()
 	if err != nil {
-		if log != nil {
-			log.WithError(err).Error("unable to start application")
-			os.Exit(1)
-		}
 		panic(err)
 	}
-
+	log := dic.GetService[logger.Logger]()
 	conf := dic.GetService[config.Config]()
 
 	if !conf.DisableEmbedWorker {
