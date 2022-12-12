@@ -7,7 +7,7 @@ RUN CGO_ENABLED=0 go build -o estrys ./cmd/estrys/
 RUN CGO_ENABLED=0 go build -o worker ./cmd/worker/
 
 FROM builder as dev
-RUN make install-tools
+RUN go install github.com/cosmtrek/air@v1.40.4
 ENTRYPOINT ["air"]
 
 FROM dev as worker-dev
