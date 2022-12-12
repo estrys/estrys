@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 
@@ -15,6 +18,7 @@ import (
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/twitter"
 	"github.com/estrys/estrys/internal/worker"
+	"github.com/estrys/estrys/migrations"
 )
 
 func main() {
@@ -24,6 +28,23 @@ func main() {
 	}
 	log := dic.GetService[logger.Logger]()
 	conf := dic.GetService[config.Config]()
+
+	if conf.RunMigrations {
+		d, err := iofs.New(migrations.FS, ".")
+		if err != nil {
+			log.WithError(err).Fatal("Could not read database migration files")
+		}
+		migration, err := migrate.NewWithSourceInstance("iofs", d, conf.DBURL.String())
+		if err != nil {
+			log.WithError(err).Fatal("Failed to init migration")
+		}
+
+		log.Info("Running database migrations ...")
+		err = migration.Up()
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+			log.WithError(err).Fatal("Could not run migrations")
+		}
+	}
 
 	if !conf.DisableEmbedWorker {
 		go func() {

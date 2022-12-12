@@ -22,6 +22,7 @@ type Config struct {
 	DisableEmbedWorker         bool          `mapstructure:"disable_embed_worker"`
 	AllowedUsers               []string      `mapstructure:"allowed_users"`
 	TwitterAllowedUsers        []string      `mapstructure:"twitter_allowed_users"`
+	RunMigrations              bool          `mapstructure:"run_migrations"`
 }
 
 type Loader interface {
