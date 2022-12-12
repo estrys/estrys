@@ -226,3 +226,7 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) {
 
 	responseWriter.WriteHeader(http.StatusAccepted)
 }
+
+func HandleStatuses(responseWriter http.ResponseWriter, request *http.Request) {
+	responseWriter.WriteHeader(http.StatusNotFound)
+}

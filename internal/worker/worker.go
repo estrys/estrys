@@ -23,7 +23,8 @@ func StartBroker(ctx context.Context) error {
 			LogLevel:    asynq.InfoLevel,
 			Logger:      log,
 			Queues: map[string]int{
-				queues.QueueInboxPost: 1,
+				queues.QueueFollows: 1,
+				queues.QueueTweets:  1,
 			},
 			// Specify how many concurrent workers to use
 			//Concurrency: 1,
@@ -34,6 +35,7 @@ func StartBroker(ctx context.Context) error {
 
 	mux.HandleFunc(tasks.TypeAcceptFollow, tasks.HandleAcceptFollow)
 	mux.HandleFunc(tasks.TypeRejectFollow, tasks.HandleRejectFollow)
+	mux.HandleFunc(tasks.TypeSendTweet, tasks.HandleSendTweet)
 
 	log.Info("Starting worker")
 

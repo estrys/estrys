@@ -39,7 +39,7 @@ func NewAcceptFollowTask(username string, act vocab.ActivityStreamsFollow) (*asy
 		payload,
 		asynq.MaxRetry(5),
 		asynq.Timeout(30*time.Second),
-		asynq.Queue(queues.QueueInboxPost),
+		asynq.Queue(queues.QueueFollows),
 		asynq.Retention(24*time.Hour),
 	), nil
 }

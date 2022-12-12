@@ -76,6 +76,29 @@ func (_m *UserRepository) Get(_a0 context.Context, _a1 string) (*models.User, er
 	return r0, r1
 }
 
+// GetFollowers provides a mock function with given fields: _a0, _a1
+func (_m *UserRepository) GetFollowers(_a0 context.Context, _a1 *models.User) (models.ActorSlice, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 models.ActorSlice
+	if rf, ok := ret.Get(0).(func(context.Context, *models.User) models.ActorSlice); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(models.ActorSlice)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *models.User) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetWithFollowers provides a mock function with given fields: ctx
 func (_m *UserRepository) GetWithFollowers(ctx context.Context) (models.UserSlice, error) {
 	ret := _m.Called(ctx)

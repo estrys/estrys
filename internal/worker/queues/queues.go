@@ -1,5 +1,6 @@
 package queues
 
 const (
-	QueueInboxPost = "inbox_post"
+	QueueFollows = "follows"
+	QueueTweets  = "tweets"
 )

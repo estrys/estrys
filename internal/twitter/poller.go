@@ -10,6 +10,9 @@ import (
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/repository"
+	twittermodels "github.com/estrys/estrys/internal/twitter/models"
+	"github.com/estrys/estrys/internal/worker/client"
+	"github.com/estrys/estrys/internal/worker/tasks"
 )
 
 type TwitterPoller interface {
@@ -20,9 +23,11 @@ type twitterPoller struct {
 	log         logger.Logger
 	twitter     TwitterClient
 	repo        repository.UserRepository
+	worker      client.BackgroundWorkerClient
 	users       models.UserSlice
 	userCursors map[string]string
 	userIndex   int
+	startTime   time.Time
 }
 
 var (
@@ -38,11 +43,13 @@ func NewPoller(
 	log logger.Logger,
 	client TwitterClient,
 	repo repository.UserRepository,
+	worker client.BackgroundWorkerClient,
 ) *twitterPoller {
 	return &twitterPoller{
 		log:         log,
 		twitter:     client,
 		repo:        repo,
+		worker:      worker,
 		userCursors: map[string]string{},
 	}
 }
@@ -70,11 +77,22 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 	}
 	user := c.users[c.userIndex]
 	userLogger := c.log.WithField("user", user.Username)
-	opt := twitter.UserTweetTimelineOpts{}
+	opt := twitter.UserTweetTimelineOpts{
+		MaxResults: 100,
+		Excludes: []twitter.Exclude{
+			twitter.ExcludeReplies,
+		},
+		TweetFields: []twitter.TweetField{
+			twitter.TweetFieldID,
+			twitter.TweetFieldText,
+			twitter.TweetFieldCreatedAt,
+			twitter.TweetFieldPossiblySensitve,
+		},
+	}
 	if cursor, exist := c.userCursors[c.users[c.userIndex].Username]; exist {
 		opt.SinceID = cursor
 	} else {
-		opt.StartTime = time.Now()
+		opt.StartTime = c.startTime
 	}
 	userLogger.WithField("cursor", opt.SinceID).Trace("fetching user tweets")
 	tweets, err := c.twitter.GetTweets(ctx, user.ID, opt)
@@ -83,7 +101,35 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 	}
 	userLogger.WithField("count", tweets.Meta.ResultCount).Trace("fetched tweets")
 	if tweets.Meta.ResultCount > 0 {
-		// TODO Do something with the tweets ;)
+		for _, tweet := range tweets.Raw.Tweets {
+			createdAt, err := time.Parse(time.RFC3339, tweet.CreatedAt)
+			if err != nil {
+				c.log.WithError(err).Error("unable to decode tweet date")
+				continue
+			}
+			actors, err := c.repo.GetFollowers(ctx, user)
+			if err != nil {
+				c.log.WithField("user", user.Username).WithError(err).Error("unable to retrieve followers for user")
+				continue
+			}
+			for _, actor := range actors {
+				sendTweetTask, err := tasks.NewSendTweet(user, actor, twittermodels.Tweet{
+					ID:        tweet.ID,
+					Text:      tweet.Text,
+					Published: createdAt,
+					Sensitive: tweet.PossiblySensitive,
+				})
+				if err != nil {
+					c.log.WithError(err).Error("unable to create send tweet task")
+					continue
+				}
+				_, err = c.worker.Enqueue(sendTweetTask)
+				if err != nil {
+					c.log.WithField("user", user.Username).WithError(err).Error("unable to schedule send tweet task")
+				}
+				c.log.WithField("tweet", tweet.ID).Info("scheduled new tweet send")
+			}
+		}
 		c.userCursors[c.users[c.userIndex].Username] = tweets.Meta.NewestID
 	}
 	c.userIndex++
@@ -113,6 +159,8 @@ func (c *twitterPoller) Start(ctx context.Context) error {
 	c.log.Debug("we have users to poll")
 
 	ticker := time.NewTicker(periodMins * time.Minute / maxRequests)
+	c.startTime = time.Now()
+
 	for {
 		select {
 		case <-ticker.C:

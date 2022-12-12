@@ -7,5 +7,6 @@ const (
 	UserFollowingRoute string = "user_following"
 	UserFollowersRoute string = "user_followers"
 	UserOutbox         string = "user_outbox"
+	UserStatuses       string = "user_statuses"
 	UserInbox          string = "user_inbox"
 )
