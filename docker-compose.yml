@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   estrys:
+    image: ghcr.io/estrys/estrys
     build: .
     depends_on:
       redis:
