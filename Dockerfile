@@ -14,6 +14,7 @@ FROM dev as worker-dev
 ENTRYPOINT ["air", "-c", ".air_worker.toml"]
 
 FROM scratch
+EXPOSE 8080
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /go/src/app/.env /
 COPY --from=builder /go/src/app/estrys /
