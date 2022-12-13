@@ -25,6 +25,7 @@ type CreateUserRequest struct {
 //go:generate mockery --name=UserRepository
 type UserRepository interface {
 	Get(context.Context, string) (*models.User, error)
+	GetFollowers(context.Context, *models.User) (models.ActorSlice, error)
 	Follow(context.Context, *models.User, *models.Actor) error
 	UnFollow(context.Context, *models.User, *models.Actor) error
 	CreateUser(context.Context, CreateUserRequest) (*models.User, error)
@@ -88,4 +89,8 @@ func (u *userRepo) GetWithFollowers(ctx context.Context) (models.UserSlice, erro
 		)),
 	}
 	return models.Users(mods...).All(ctx, getExecutor(ctx, u.db.DB()))
+}
+
+func (u *userRepo) GetFollowers(ctx context.Context, user *models.User) (models.ActorSlice, error) {
+	return user.Actors().All(ctx, getExecutor(ctx, u.db.DB()))
 }

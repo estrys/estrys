@@ -14,6 +14,7 @@ import (
 	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/router/routes"
 	"github.com/estrys/estrys/internal/router/urlgenerator"
+	twittermodels "github.com/estrys/estrys/internal/twitter/models"
 )
 
 type VocabService interface {
@@ -29,6 +30,7 @@ type VocabService interface {
 		user *models.User,
 		act streams.ActivityStreamsInterface,
 	) (vocab.ActivityStreamsReject, error)
+	GetCreateNoteFromTweet(string, twittermodels.Tweet) (vocab.ActivityStreamsCreate, error)
 }
 
 type activityPubService struct {
@@ -304,6 +306,76 @@ func (a *activityPubService) GetReject(
 	acceptActivity.SetActivityStreamsObject(object)
 
 	return acceptActivity, nil
+}
+
+func (a *activityPubService) GetCreateNoteFromTweet(
+	username string,
+	tweet twittermodels.Tweet,
+) (vocab.ActivityStreamsCreate, error) {
+	userURL, err := a.URLGenerator.URL(
+		routes.UserRoute,
+		[]string{"username", username},
+		urlgenerator.OptionAbsoluteURL,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot generate user URL")
+	}
+
+	followersURL, err := a.URLGenerator.URL(
+		routes.UserFollowersRoute,
+		[]string{"username", username},
+		urlgenerator.OptionAbsoluteURL,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot generate followers URL")
+	}
+	create := streams.NewActivityStreamsCreate()
+	note := streams.NewActivityStreamsNote()
+
+	cc := streams.NewActivityStreamsCcProperty()
+	cc.AppendIRI(followersURL)
+	create.SetActivityStreamsCc(cc)
+	note.SetActivityStreamsCc(cc)
+
+	id := streams.NewJSONLDIdProperty()
+
+	statusURL, err := a.URLGenerator.URL(
+		routes.UserStatuses,
+		[]string{"username", username, "status_id", tweet.ID},
+		urlgenerator.OptionAbsoluteURL,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot generate status URL")
+	}
+	id.Set(statusURL)
+	create.SetJSONLDId(id)
+	note.SetJSONLDId(id)
+	act := streams.NewActivityStreamsActorProperty()
+	act.AppendIRI(userURL)
+	create.SetActivityStreamsActor(act)
+	noteAttributedTo := streams.NewActivityStreamsAttributedToProperty()
+	noteAttributedTo.AppendIRI(userURL)
+	note.SetActivityStreamsAttributedTo(noteAttributedTo)
+	noteContent := streams.NewActivityStreamsContentProperty()
+	noteContent.AppendXMLSchemaString(tweet.Text)
+	note.SetActivityStreamsContent(noteContent)
+	notePublished := streams.NewActivityStreamsPublishedProperty()
+	notePublished.Set(tweet.Published)
+	note.SetActivityStreamsPublished(notePublished)
+	noteTo := streams.NewActivityStreamsToProperty()
+	publicURL, _ := url.Parse("https://www.w3.org/ns/activitystreams#Public")
+	noteTo.AppendIRI(publicURL)
+	note.SetActivityStreamsTo(noteTo)
+	sensitive := streams.NewActivityStreamsSensitiveProperty()
+	sensitive.AppendXMLSchemaBoolean(tweet.Sensitive)
+	note.SetActivityStreamsSensitive(sensitive)
+	obj := streams.NewActivityStreamsObjectProperty()
+	obj.AppendActivityStreamsNote(note)
+	create.SetActivityStreamsTo(noteTo)
+	create.SetActivityStreamsPublished(notePublished)
+	create.SetActivityStreamsObject(obj)
+
+	return create, nil
 }
 
 type withObject interface {
