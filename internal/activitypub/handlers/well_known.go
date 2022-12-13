@@ -9,12 +9,24 @@ import (
 	"github.com/estrys/estrys/internal/config"
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/domain"
+	"github.com/estrys/estrys/internal/logger"
 )
 
 func HandleWebFinger(responseWriter http.ResponseWriter, request *http.Request) {
-	p := request.URL.Query().Get("resource")
-	s := strings.Split(p, ":")
-	splittedUserAddress := strings.Split(s[1], "@")
+	log := dic.GetService[logger.Logger]()
+	resource := request.URL.Query().Get("resource")
+	resourceSplit := strings.Split(resource, ":")
+	if len(resourceSplit) != 2 {
+		log.WithField("resource", resource).Error("webfinger resource param invalid")
+		responseWriter.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	splittedUserAddress := strings.Split(resourceSplit[1], "@")
+	if len(resourceSplit) != 2 {
+		log.WithField("resource", resource).Error("webfinger resource param invalid")
+		responseWriter.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	username := splittedUserAddress[0]
 	instance := splittedUserAddress[1]
 	conf := dic.GetService[config.Config]()
