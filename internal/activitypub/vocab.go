@@ -117,6 +117,15 @@ func (a *activityPubService) GetOutbox(user *domainmodels.User) (map[string]any,
 func (a *activityPubService) GetActor(user *domainmodels.User) (map[string]any, error) {
 	actor := streams.NewActivityStreamsService()
 
+	inboxURL, err := a.URLGenerator.URL(
+		routes.UserInbox,
+		[]string{"username", user.Username},
+		urlgenerator.OptionAbsoluteURL,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot generate inbox URL")
+	}
+
 	outboxURL, err := a.URLGenerator.URL(
 		routes.UserOutbox,
 		[]string{"username", user.Username},
@@ -153,7 +162,6 @@ func (a *activityPubService) GetActor(user *domainmodels.User) (map[string]any, 
 	following.SetIRI(followingURL)
 	actor.SetActivityStreamsFollowing(following)
 
-	inboxURL, _ := url.Parse("https://elie.eu.ngrok.io/users/smaftoul/inbox")
 	inbox := streams.NewActivityStreamsInboxProperty()
 	inbox.SetIRI(inboxURL)
 	actor.SetActivityStreamsInbox(inbox)

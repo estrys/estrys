@@ -10,7 +10,7 @@
     "url": "https://example.com/image.jpg"
   },
   "id": "https://example.com/users/foobar",
-  "inbox": "https://elie.eu.ngrok.io/users/smaftoul/inbox",
+  "inbox": "https://example.com/users/foobar/inbox",
   "name": "Foo Bar",
   "outbox": "https://example.com/users/foobar/outbox",
   "preferredUsername": "foobar",
