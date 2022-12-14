@@ -12,13 +12,11 @@ import (
 	"github.com/estrys/estrys/internal/activitypub/auth"
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/domain"
-	"github.com/estrys/estrys/internal/logger"
+	internalerrors "github.com/estrys/estrys/internal/errors"
 	"github.com/estrys/estrys/internal/twitter"
 )
 
-func HandleUser(responseWriter http.ResponseWriter, request *http.Request) {
-	log := dic.GetService[logger.Logger]()
-
+func HandleUser(responseWriter http.ResponseWriter, request *http.Request) error {
 	vars := mux.Vars(request)
 	// TODO Validate username input
 
@@ -28,34 +26,39 @@ func HandleUser(responseWriter http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			responseWriter.WriteHeader(http.StatusNotFound)
-		} else {
-			responseWriter.WriteHeader(http.StatusInternalServerError)
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "user not found",
+				HTTPCode:    http.StatusNotFound,
+			}
 		}
-		log.WithError(err).Error("unable to retrieve user")
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	actor, err := vocabService.GetActor(user)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(actor)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
+	return nil
 }
 
-func HandleFollowing(responseWriter http.ResponseWriter, request *http.Request) {
-	log := dic.GetService[logger.Logger]()
-
+func HandleFollowing(responseWriter http.ResponseWriter, request *http.Request) error {
 	vars := mux.Vars(request)
 	userService := dic.GetService[domain.UserService]()
 	user, err := userService.GetFullUser(request.Context(), vars["username"])
@@ -63,34 +66,39 @@ func HandleFollowing(responseWriter http.ResponseWriter, request *http.Request) 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			responseWriter.WriteHeader(http.StatusNotFound)
-		} else {
-			responseWriter.WriteHeader(http.StatusInternalServerError)
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "user not found",
+				HTTPCode:    http.StatusNotFound,
+			}
 		}
-		log.WithError(err).Error("unable to retrieve user")
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	following, err := vocabService.GetFollowing(user)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(following)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
+	return nil
 }
 
-func HandleFollowers(responseWriter http.ResponseWriter, request *http.Request) {
-	log := dic.GetService[logger.Logger]()
-
+func HandleFollowers(responseWriter http.ResponseWriter, request *http.Request) error {
 	vars := mux.Vars(request)
 	userService := dic.GetService[domain.UserService]()
 	user, err := userService.GetFullUser(request.Context(), vars["username"])
@@ -98,34 +106,40 @@ func HandleFollowers(responseWriter http.ResponseWriter, request *http.Request) 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			responseWriter.WriteHeader(http.StatusNotFound)
-		} else {
-			responseWriter.WriteHeader(http.StatusInternalServerError)
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "user not found",
+				HTTPCode:    http.StatusNotFound,
+			}
 		}
-		log.WithError(err).Error("unable to retrieve user")
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	followers, err := vocabService.GetFollowers(user)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(followers)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
+
+	return nil
 }
 
-func HandleOutbox(responseWriter http.ResponseWriter, request *http.Request) {
-	log := dic.GetService[logger.Logger]()
-
+func HandleOutbox(responseWriter http.ResponseWriter, request *http.Request) error {
 	vars := mux.Vars(request)
 	userService := dic.GetService[domain.UserService]()
 	user, err := userService.GetFullUser(request.Context(), vars["username"])
@@ -133,37 +147,44 @@ func HandleOutbox(responseWriter http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			responseWriter.WriteHeader(http.StatusNotFound)
-		} else {
-			responseWriter.WriteHeader(http.StatusInternalServerError)
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "user not found",
+				HTTPCode:    http.StatusNotFound,
+			}
 		}
-		log.WithError(err).Error("unable to retrieve user")
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	outbox, err := vocabService.GetOutbox(user)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(outbox)
 	if err != nil {
-		log.Error(err)
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
+	return nil
 }
 
-func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) {
-	log := dic.GetService[logger.Logger]()
-
+func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) error {
 	if !auth.IsRequestSigned(request) {
-		responseWriter.WriteHeader(http.StatusForbidden)
-		return
+		return internalerrors.HandlerError{
+			UserMessage: "request signature failed",
+			HTTPCode:    http.StatusForbidden,
+		}
 	}
 
 	vars := mux.Vars(request)
@@ -171,14 +192,18 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) {
 	_, err := twitterClient.GetUser(request.Context(), vars["username"])
 
 	if err != nil {
-		log.WithError(err).Error("unable to retrieve user")
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) {
-			responseWriter.WriteHeader(http.StatusNotFound)
-			return
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "user not found",
+				HTTPCode:    http.StatusNotFound,
+			}
 		}
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 
 	inboxService := dic.GetService[domain.InboxService]()
@@ -188,43 +213,61 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) {
 		inboxService.UnFollow,
 	)
 	if err != nil {
-		log.WithError(err).Error("unable to create activity streams json resolver")
-		responseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 	err = json.NewDecoder(request.Body).Decode(&jsonMap)
 	if err != nil {
-		log.WithError(err).Error("unable to decode activity streams json")
-		responseWriter.WriteHeader(http.StatusBadRequest)
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
 	err = jsonResolver.Resolve(request.Context(), jsonMap)
 	if err != nil {
-		logEntry := log.WithField("activity", jsonMap["type"]).WithError(err)
 		var notAllowedErr *domain.ActorNotAllowedError
 		var notAllowedUndo *domain.UnsuportedUndoObjectError
-
 		switch {
 		case errors.As(err, &notAllowedErr):
-			logEntry = logEntry.WithField("actor", notAllowedErr.Actor())
-			responseWriter.WriteHeader(http.StatusForbidden)
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "not allowed to follow this user",
+				HTTPCode:    http.StatusForbidden,
+			}
 		case errors.Is(err, streams.ErrNoCallbackMatch):
-			fallthrough
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "unsupported activity",
+				HTTPCode:    http.StatusBadRequest,
+			}
 		case errors.Is(err, domain.ErrFollowMismatchDomain):
-			fallthrough
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "cannot follow a user that is not on this instance",
+				HTTPCode:    http.StatusBadRequest,
+			}
 		case errors.As(err, &notAllowedUndo):
-			fallthrough
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "can only undo Follow activities",
+				HTTPCode:    http.StatusBadRequest,
+			}
 		case errors.Is(err, domain.ErrUserDoesNotExist):
-			responseWriter.WriteHeader(http.StatusBadRequest)
-		default:
-			responseWriter.WriteHeader(http.StatusInternalServerError)
+			return internalerrors.HandlerError{
+				Cause:       err,
+				UserMessage: "user not found",
+				HTTPCode:    http.StatusBadRequest,
+			}
 		}
-
-		logEntry.Error("unable to handle activity")
-		return
+		return internalerrors.HandlerError{
+			Cause:    err,
+			HTTPCode: http.StatusInternalServerError,
+		}
 	}
-
 	responseWriter.WriteHeader(http.StatusAccepted)
+	return nil
 }
 
 func HandleStatuses(responseWriter http.ResponseWriter, request *http.Request) {

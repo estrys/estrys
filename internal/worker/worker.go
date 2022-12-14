@@ -7,6 +7,7 @@ import (
 
 	"github.com/estrys/estrys/internal/config"
 	"github.com/estrys/estrys/internal/dic"
+	"github.com/estrys/estrys/internal/errors"
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/worker/queues"
 	"github.com/estrys/estrys/internal/worker/tasks"
@@ -26,6 +27,7 @@ func StartBroker(ctx context.Context) error {
 				queues.QueueFollows: 1,
 				queues.QueueTweets:  1,
 			},
+			ErrorHandler: errors.AsynqErrorHandler(),
 			// Specify how many concurrent workers to use
 			//Concurrency: 1,
 		},
