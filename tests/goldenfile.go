@@ -3,7 +3,6 @@ package tests
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -16,7 +15,7 @@ import (
 var shouldUpdate = flag.Bool("update", false, "")
 
 func GetGoldenFilePath(filePath string) string {
-	return path.Join("testdata", fmt.Sprintf("%s.json", filePath))
+	return path.Join("testdata", filePath)
 }
 
 func AssertJSONResponse(t *testing.T, fileName string, actual string) {
@@ -45,4 +44,22 @@ func AssertJSONResponse(t *testing.T, fileName string, actual string) {
 		t.Fatal(errors.Wrap(err, "unable to unmarshall goldenfile json"))
 	}
 	require.Equal(t, expectedMap, actualMap)
+}
+
+func AssertHTMLResponse(t *testing.T, fileName string, actual string) {
+	t.Helper()
+
+	filePath := GetGoldenFilePath(fileName)
+	if *shouldUpdate {
+		err := os.WriteFile(filePath, []byte(actual), os.ModePerm)
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "unable to write goldenfile"))
+		}
+	}
+
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "unable to read golden file content"))
+	}
+	require.Equal(t, string(fileContent), actual)
 }

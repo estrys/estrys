@@ -17,6 +17,7 @@ import (
 	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/repository"
 	twittermodels "github.com/estrys/estrys/internal/twitter/models"
+	twitterrepository "github.com/estrys/estrys/internal/twitter/repository"
 	"github.com/estrys/estrys/internal/worker/queues"
 )
 
@@ -51,6 +52,7 @@ func HandleSendTweet(ctx context.Context, task *asynq.Task) error {
 	userRepo := dic.GetService[repository.UserRepository]()
 	actorRepo := dic.GetService[repository.ActorRepository]()
 	activityPubClient := dic.GetService[activitypubclient.ActivityPubClient]()
+	tweetRepo := dic.GetService[twitterrepository.TweetRepository]()
 
 	var input SendTweetInput
 	if err := json.Unmarshal(task.Payload(), &input); err != nil {
@@ -67,6 +69,11 @@ func HandleSendTweet(ctx context.Context, task *asynq.Task) error {
 	actor, err := actorRepo.Get(ctx, actorURL)
 	if err != nil {
 		return errors.Wrap(err, "unable to fetch actor from database")
+	}
+
+	err = tweetRepo.Store(ctx, &input.Tweet)
+	if err != nil {
+		return errors.Wrap(err, "unable to store tweet")
 	}
 
 	createNote, err := vocabService.GetCreateNoteFromTweet(user.Username, input.Tweet)

@@ -15,6 +15,7 @@ import (
 	"github.com/estrys/estrys/internal/twitter"
 )
 
+//go:generate mockery --name=UserService
 type UserService interface {
 	GetFullUser(context.Context, string) (*domainmodels.User, error)
 	BatchCreateUsers(ctx context.Context, allowedTwitterUsers []string) error

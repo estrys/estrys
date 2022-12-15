@@ -24,6 +24,8 @@ import (
 	"github.com/estrys/estrys/internal/router"
 	"github.com/estrys/estrys/internal/router/urlgenerator"
 	"github.com/estrys/estrys/internal/twitter"
+	"github.com/estrys/estrys/internal/twitter/models"
+	twitterrepository "github.com/estrys/estrys/internal/twitter/repository"
 	"github.com/estrys/estrys/internal/worker/client"
 )
 
@@ -55,6 +57,10 @@ func BuildContainer() error {
 		redisClient,
 		cache.OptionDefaultTTL(conf.TwitterUserCacheTimeout),
 	))
+	_ = dic.Register[cache.Cache[models.Tweet]](cache.CreateRedisCache[models.Tweet](
+		redisClient,
+		cache.OptionDefaultTTL(conf.TwitterTweetCacheTimeout),
+	))
 	_ = dic.Register[client.BackgroundWorkerClient](client.NewBackgroundWorkerClient(
 		asynq.NewClient(asynq.RedisClientOpt{Addr: conf.RedisAddress}),
 	))
@@ -73,6 +79,11 @@ func BuildContainer() error {
 		dic.GetService[cache.Cache[twitter.User]](),
 		dic.GetService[twitter.Backend](),
 	))
+	_ = dic.Register[twitterrepository.TweetRepository](
+		twitterrepository.NewRedisTweetRepository(
+			dic.GetService[cache.Cache[models.Tweet]](),
+		),
+	)
 	activityPubClient, err := activitypubclient.NewActivityPubClient(
 		&http.Client{},
 		dic.GetService[logger.Logger](),

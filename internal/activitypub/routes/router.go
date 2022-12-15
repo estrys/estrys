@@ -40,10 +40,6 @@ func Router(rootRouter *mux.Router) {
 		Path("/{username}/outbox").
 		Methods(http.MethodGet).
 		HandlerFunc(errors.HTTPErrorHandler(handlers.HandleOutbox))
-	userRouter.NewRoute().Name(routes.UserStatuses).
-		Path("/{username}/statuses/{status_id}").
-		Methods(http.MethodGet).
-		HandlerFunc(handlers.HandleStatuses)
 
 	inboxRouter := userRouter.PathPrefix("/{username}/inbox").Subrouter()
 	inboxRouter.Use(auth.HTTPSigMiddleware)

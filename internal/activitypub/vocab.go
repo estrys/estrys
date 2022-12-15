@@ -340,8 +340,8 @@ func (a *activityPubService) GetCreateNoteFromTweet(
 	id := streams.NewJSONLDIdProperty()
 
 	statusURL, err := a.URLGenerator.URL(
-		routes.UserStatuses,
-		[]string{"username", username, "status_id", tweet.ID},
+		routes.StatusRoute,
+		[]string{"username", username, "id", tweet.ID},
 		urlgenerator.OptionAbsoluteURL,
 	)
 	if err != nil {
