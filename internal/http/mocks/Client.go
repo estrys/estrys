@@ -13,6 +13,14 @@ type Client struct {
 	mock.Mock
 }
 
+type Client_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *Client) EXPECT() *Client_Expecter {
+	return &Client_Expecter{mock: &_m.Mock}
+}
+
 // Do provides a mock function with given fields: req
 func (_m *Client) Do(req *http.Request) (*http.Response, error) {
 	ret := _m.Called(req)
@@ -34,6 +42,29 @@ func (_m *Client) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	return r0, r1
+}
+
+// Client_Do_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Do'
+type Client_Do_Call struct {
+	*mock.Call
+}
+
+// Do is a helper method to define mock.On call
+//   - req *http.Request
+func (_e *Client_Expecter) Do(req interface{}) *Client_Do_Call {
+	return &Client_Do_Call{Call: _e.mock.On("Do", req)}
+}
+
+func (_c *Client_Do_Call) Run(run func(req *http.Request)) *Client_Do_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(*http.Request))
+	})
+	return _c
+}
+
+func (_c *Client_Do_Call) Return(_a0 *http.Response, _a1 error) *Client_Do_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
 }
 
 type mockConstructorTestingTNewClient interface {

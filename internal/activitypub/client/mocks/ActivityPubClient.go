@@ -16,6 +16,14 @@ type ActivityPubClient struct {
 	mock.Mock
 }
 
+type ActivityPubClient_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *ActivityPubClient) EXPECT() *ActivityPubClient_Expecter {
+	return &ActivityPubClient_Expecter{mock: &_m.Mock}
+}
+
 // PostInbox provides a mock function with given fields: ctx, to, from, act
 func (_m *ActivityPubClient) PostInbox(ctx context.Context, to *models.Actor, from *models.User, act pub.Activity) error {
 	ret := _m.Called(ctx, to, from, act)
@@ -28,6 +36,32 @@ func (_m *ActivityPubClient) PostInbox(ctx context.Context, to *models.Actor, fr
 	}
 
 	return r0
+}
+
+// ActivityPubClient_PostInbox_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'PostInbox'
+type ActivityPubClient_PostInbox_Call struct {
+	*mock.Call
+}
+
+// PostInbox is a helper method to define mock.On call
+//   - ctx context.Context
+//   - to *models.Actor
+//   - from *models.User
+//   - act pub.Activity
+func (_e *ActivityPubClient_Expecter) PostInbox(ctx interface{}, to interface{}, from interface{}, act interface{}) *ActivityPubClient_PostInbox_Call {
+	return &ActivityPubClient_PostInbox_Call{Call: _e.mock.On("PostInbox", ctx, to, from, act)}
+}
+
+func (_c *ActivityPubClient_PostInbox_Call) Run(run func(ctx context.Context, to *models.Actor, from *models.User, act pub.Activity)) *ActivityPubClient_PostInbox_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*models.Actor), args[2].(*models.User), args[3].(pub.Activity))
+	})
+	return _c
+}
+
+func (_c *ActivityPubClient_PostInbox_Call) Return(_a0 error) *ActivityPubClient_PostInbox_Call {
+	_c.Call.Return(_a0)
+	return _c
 }
 
 type mockConstructorTestingTNewActivityPubClient interface {

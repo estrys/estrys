@@ -19,7 +19,7 @@ type CreateActorRequest struct {
 	PublicKey crypto.PublicKey
 }
 
-//go:generate mockery --name ActorRepository
+//go:generate mockery --with-expecter --name ActorRepository
 type ActorRepository interface {
 	Get(ctx context.Context, url *url.URL) (*models.Actor, error)
 	Create(context.Context, CreateActorRequest) (*models.Actor, error)

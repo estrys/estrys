@@ -2,7 +2,7 @@ package client
 
 import "github.com/hibiken/asynq"
 
-//go:generate mockery --name BackgroundWorkerClient
+//go:generate mockery --with-expecter --name BackgroundWorkerClient
 type BackgroundWorkerClient interface {
 	Enqueue(task *asynq.Task, opts ...asynq.Option) (*asynq.TaskInfo, error)
 }

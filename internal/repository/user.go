@@ -22,7 +22,7 @@ type CreateUserRequest struct {
 	PrivateKey *rsa.PrivateKey
 }
 
-//go:generate mockery --name=UserRepository
+//go:generate mockery --with-expecter --name=UserRepository
 type UserRepository interface {
 	Get(context.Context, string) (*models.User, error)
 	GetFollowers(context.Context, *models.User) (models.ActorSlice, error)

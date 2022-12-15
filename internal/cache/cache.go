@@ -16,7 +16,7 @@ type Error interface {
 
 var ErrMiss = errors.New("cache key not found")
 
-//go:generate mockery --name Cache
+//go:generate mockery --with-expecter --name Cache
 type Cache[T any] interface {
 	Set(ctx context.Context, key string, value T, opts ...Option) error
 	Get(ctx context.Context, key string) (*T, error)

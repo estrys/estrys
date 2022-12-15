@@ -15,6 +15,14 @@ type Cache[T interface{}] struct {
 	mock.Mock
 }
 
+type Cache_Expecter[T interface{}] struct {
+	mock *mock.Mock
+}
+
+func (_m *Cache[T]) EXPECT() *Cache_Expecter[T] {
+	return &Cache_Expecter[T]{mock: &_m.Mock}
+}
+
 // Get provides a mock function with given fields: ctx, key
 func (_m *Cache[T]) Get(ctx context.Context, key string) (*T, error) {
 	ret := _m.Called(ctx, key)
@@ -38,6 +46,30 @@ func (_m *Cache[T]) Get(ctx context.Context, key string) (*T, error) {
 	return r0, r1
 }
 
+// Cache_Get_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Get'
+type Cache_Get_Call[T interface{}] struct {
+	*mock.Call
+}
+
+// Get is a helper method to define mock.On call
+//   - ctx context.Context
+//   - key string
+func (_e *Cache_Expecter[T]) Get(ctx interface{}, key interface{}) *Cache_Get_Call[T] {
+	return &Cache_Get_Call[T]{Call: _e.mock.On("Get", ctx, key)}
+}
+
+func (_c *Cache_Get_Call[T]) Run(run func(ctx context.Context, key string)) *Cache_Get_Call[T] {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *Cache_Get_Call[T]) Return(_a0 *T, _a1 error) *Cache_Get_Call[T] {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
 // Set provides a mock function with given fields: ctx, key, value, opts
 func (_m *Cache[T]) Set(ctx context.Context, key string, value T, opts ...cache.Option) error {
 	_va := make([]interface{}, len(opts))
@@ -57,6 +89,39 @@ func (_m *Cache[T]) Set(ctx context.Context, key string, value T, opts ...cache.
 	}
 
 	return r0
+}
+
+// Cache_Set_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Set'
+type Cache_Set_Call[T interface{}] struct {
+	*mock.Call
+}
+
+// Set is a helper method to define mock.On call
+//   - ctx context.Context
+//   - key string
+//   - value T
+//   - opts ...cache.Option
+func (_e *Cache_Expecter[T]) Set(ctx interface{}, key interface{}, value interface{}, opts ...interface{}) *Cache_Set_Call[T] {
+	return &Cache_Set_Call[T]{Call: _e.mock.On("Set",
+		append([]interface{}{ctx, key, value}, opts...)...)}
+}
+
+func (_c *Cache_Set_Call[T]) Run(run func(ctx context.Context, key string, value T, opts ...cache.Option)) *Cache_Set_Call[T] {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]cache.Option, len(args)-3)
+		for i, a := range args[3:] {
+			if a != nil {
+				variadicArgs[i] = a.(cache.Option)
+			}
+		}
+		run(args[0].(context.Context), args[1].(string), args[2].(T), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *Cache_Set_Call[T]) Return(_a0 error) *Cache_Set_Call[T] {
+	_c.Call.Return(_a0)
+	return _c
 }
 
 type mockConstructorTestingTNewCache interface {

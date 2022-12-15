@@ -8,7 +8,7 @@ import (
 	"github.com/estrys/estrys/internal/twitter/models"
 )
 
-//go:generate mockery --name=TweetRepository
+//go:generate mockery --with-expecter --name=TweetRepository
 type TweetRepository interface {
 	GetTweet(context.Context, string) (*models.Tweet, error)
 	Store(context.Context, *models.Tweet) error

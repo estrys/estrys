@@ -47,7 +47,7 @@ type User struct {
 	Tweets          uint64
 }
 
-//go:generate mockery --name=Backend
+//go:generate mockery --with-expecter --name=Backend
 type Backend interface {
 	UserNameLookup(
 		ctx context.Context,
@@ -61,7 +61,7 @@ type Backend interface {
 	) (*twitter.UserTweetTimelineResponse, error)
 }
 
-//go:generate mockery --name=TwitterClient
+//go:generate mockery --with-expecter --name=TwitterClient
 type TwitterClient interface {
 	GetTweets(context.Context, string, twitter.UserTweetTimelineOpts) (*twitter.UserTweetTimelineResponse, error)
 	// StreamTweets(callback func(*twitter.TweetMessage)) error
