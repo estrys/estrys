@@ -18,6 +18,7 @@ type Config struct {
 	DBURL                      *url.URL      `mapstructure:"-"`
 	RedisAddress               string        `mapstructure:"redis_address"`
 	TwitterUserCacheTimeout    time.Duration `mapstructure:"-"`
+	TwitterTweetCacheTimeout   time.Duration `mapstructure:"-"`
 	DisableHTTPSignatureVerify bool          `mapstructure:"disable_http_signature_verify"`
 	DisableEmbedWorker         bool          `mapstructure:"disable_embed_worker"`
 	AllowedUsers               []string      `mapstructure:"allowed_users"`
@@ -98,6 +99,14 @@ func (l *configLoader) Load() error {
 	conf.TwitterUserCacheTimeout, err = time.ParseDuration(twitterUserCacheDuration)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse twitter cache duration")
+	}
+
+	tweetCacheTTL := viper.GetString("cache_tweet_ttl")
+	if tweetCacheTTL != "" {
+		conf.TwitterTweetCacheTimeout, err = time.ParseDuration(tweetCacheTTL)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse tweets cache ttl duration")
+		}
 	}
 
 	if conf.Token == "" {

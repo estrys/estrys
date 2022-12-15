@@ -269,7 +269,3 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 	responseWriter.WriteHeader(http.StatusAccepted)
 	return nil
 }
-
-func HandleStatuses(responseWriter http.ResponseWriter, request *http.Request) {
-	responseWriter.WriteHeader(http.StatusNotFound)
-}

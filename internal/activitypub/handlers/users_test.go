@@ -126,7 +126,7 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
 			StatusCode: http.StatusOK,
-			GoldenFile: "user/ok",
+			GoldenFile: "user/ok.json",
 		},
 		{
 			Name: "user no found",
@@ -253,7 +253,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
 			StatusCode: http.StatusOK,
-			GoldenFile: "followers/ok",
+			GoldenFile: "followers/ok.json",
 		},
 		{
 			Name: "user no found",
@@ -265,7 +265,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
-			GoldenFile: "errors/user_not_found",
+			GoldenFile: "errors/user_not_found.json",
 			StatusCode: http.StatusNotFound,
 		},
 		{
@@ -336,7 +336,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
 			StatusCode: http.StatusOK,
-			GoldenFile: "following/ok",
+			GoldenFile: "following/ok.json",
 		},
 		{
 			Name: "twitter user no found",
@@ -348,7 +348,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
-			GoldenFile: "errors/user_not_found",
+			GoldenFile: "errors/user_not_found.json",
 			StatusCode: http.StatusNotFound,
 		},
 		{
@@ -419,7 +419,7 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
 			StatusCode: http.StatusOK,
-			GoldenFile: "outbox/ok",
+			GoldenFile: "outbox/ok.json",
 		},
 		{
 			Name: "twitter user no found",
@@ -431,7 +431,7 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
-			GoldenFile: "errors/user_not_found",
+			GoldenFile: "errors/user_not_found.json",
 			StatusCode: http.StatusNotFound,
 		},
 		{
@@ -503,7 +503,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/unsupported_activity"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/unsupported_activity.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
@@ -512,7 +512,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox() {
 				)
 				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
 			},
-			GoldenFile: "errors/invalid_activity",
+			GoldenFile: "errors/invalid_activity.json",
 			StatusCode: http.StatusBadRequest,
 		},
 	}
@@ -528,7 +528,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/domain_mismatch"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/domain_mismatch.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
@@ -538,7 +538,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
 
 			},
-			GoldenFile: "errors/follow_domain_mismatch",
+			GoldenFile: "errors/follow_domain_mismatch.json",
 			StatusCode: http.StatusBadRequest,
 		},
 		{
@@ -546,7 +546,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/no_user_in_db"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/no_user_in_db.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
@@ -560,7 +560,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 					nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
-			GoldenFile: "errors/user_not_found",
+			GoldenFile: "errors/user_not_found.json",
 			StatusCode: http.StatusBadRequest,
 		},
 		{
@@ -568,7 +568,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/valid_follow"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/valid_follow.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
@@ -607,7 +607,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 				})).Return(nil, nil)
 				_ = dic.Register[client.BackgroundWorkerClient](fakeWorker)
 			},
-			GoldenFile: "errors/actor_not_allowed_to_follow",
+			GoldenFile: "errors/actor_not_allowed_to_follow.json",
 			StatusCode: http.StatusForbidden,
 		},
 		{
@@ -615,7 +615,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/valid_follow"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/valid_follow.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
@@ -677,7 +677,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_UnFollow() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/no_user_in_db"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/no_user_in_db.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
@@ -691,7 +691,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_UnFollow() {
 					nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
-			GoldenFile: "errors/user_not_found",
+			GoldenFile: "errors/user_not_found.json",
 			StatusCode: http.StatusBadRequest,
 		},
 		{
@@ -699,7 +699,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_UnFollow() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/invalid_undo_reject"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/invalid_undo_reject.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
@@ -708,7 +708,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_UnFollow() {
 				)
 				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
 			},
-			GoldenFile: "errors/cannot_undo",
+			GoldenFile: "errors/cannot_undo.json",
 			StatusCode: http.StatusBadRequest,
 		},
 		{
@@ -716,7 +716,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_UnFollow() {
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 				tests.RequestContext{Context: authenticatedHTTPContext},
-				tests.RequestBodyFromFile{FilePath: "inbox/input/valid_undo_follow"},
+				tests.RequestBodyFromFile{FilePath: "inbox/input/valid_undo_follow.json"},
 			},
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)

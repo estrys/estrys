@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/gorilla/mux"
@@ -77,7 +78,17 @@ func (s *HTTPTestSuite) RunHTTPCases(t *testing.T, handler internalerrors.ErrorA
 			defer response.Body.Close()
 			require.Equal(t, testCase.StatusCode, response.StatusCode)
 			if testCase.GoldenFile != "" {
-				AssertJSONResponse(t, testCase.GoldenFile, string(body))
+				switch {
+				case strings.HasSuffix(testCase.GoldenFile, ".json"):
+					AssertJSONResponse(t, testCase.GoldenFile, string(body))
+				case strings.HasSuffix(testCase.GoldenFile, ".html"):
+					AssertHTMLResponse(t, testCase.GoldenFile, string(body))
+				default:
+					t.Errorf(
+						"unable to match a response format for goldenfile: %s",
+						testCase.GoldenFile,
+					)
+				}
 			}
 		})
 	}
