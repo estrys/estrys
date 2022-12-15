@@ -36,14 +36,14 @@ func Router(rootRouter *mux.Router) {
 		Path("/{username}/followers").
 		Methods(http.MethodGet).
 		HandlerFunc(errors.HTTPErrorHandler(handlers.HandleFollowers))
-	userRouter.NewRoute().Name(routes.UserOutbox).
+	userRouter.NewRoute().Name(routes.UserOutboxRoute).
 		Path("/{username}/outbox").
 		Methods(http.MethodGet).
 		HandlerFunc(errors.HTTPErrorHandler(handlers.HandleOutbox))
 
 	inboxRouter := userRouter.PathPrefix("/{username}/inbox").Subrouter()
 	inboxRouter.Use(auth.HTTPSigMiddleware)
-	inboxRouter.NewRoute().Name(routes.UserInbox).
+	inboxRouter.NewRoute().Name(routes.UserInboxRoute).
 		Path("").
 		Methods(http.MethodPost).
 		HandlerFunc(errors.HTTPErrorHandler(handlers.HandleInbox))

@@ -97,7 +97,7 @@ func (a *activityPubService) GetFollowing(user *domainmodels.User) (map[string]a
 
 func (a *activityPubService) GetOutbox(user *domainmodels.User) (map[string]any, error) {
 	outboxURL, err := a.URLGenerator.URL(
-		routes.UserOutbox,
+		routes.UserOutboxRoute,
 		[]string{"username", user.Username},
 		urlgenerator.OptionAbsoluteURL,
 	)
@@ -120,7 +120,7 @@ func (a *activityPubService) GetActor(user *domainmodels.User) (map[string]any, 
 	actor := streams.NewActivityStreamsService()
 
 	inboxURL, err := a.URLGenerator.URL(
-		routes.UserInbox,
+		routes.UserInboxRoute,
 		[]string{"username", user.Username},
 		urlgenerator.OptionAbsoluteURL,
 	)
@@ -129,7 +129,7 @@ func (a *activityPubService) GetActor(user *domainmodels.User) (map[string]any, 
 	}
 
 	outboxURL, err := a.URLGenerator.URL(
-		routes.UserOutbox,
+		routes.UserOutboxRoute,
 		[]string{"username", user.Username},
 		urlgenerator.OptionAbsoluteURL,
 	)
