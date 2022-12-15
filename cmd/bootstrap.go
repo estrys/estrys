@@ -37,8 +37,8 @@ func Bootstrap() (context.Context, context.CancelFunc, error) {
 			AttachStacktrace: true,
 		})
 		if err != nil {
-			log.WithError(err).Error("unable to init sentry")
-			os.Exit(1)
+			cancelFunc()
+			return nil, nil, errors.Wrap(err, "unable to init sentry")
 		}
 		log.Info("sentry initialized, errors will be reported")
 	}
