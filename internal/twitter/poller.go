@@ -167,6 +167,7 @@ func (c *twitterPoller) Start(ctx context.Context) error {
 			err := c.FetchTweets(ctx)
 			if err != nil {
 				c.log.WithError(err).Error("an unexpected error happened during tweets fetching")
+				sentry.CaptureException(err)
 			}
 		case <-ctx.Done():
 			c.log.Info("Stopping poller")
