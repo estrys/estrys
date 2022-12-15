@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/g8rswimmer/go-twitter/v2"
+	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
 
 	"github.com/estrys/estrys/internal/logger"
