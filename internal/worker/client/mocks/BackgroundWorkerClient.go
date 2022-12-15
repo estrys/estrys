@@ -13,6 +13,14 @@ type BackgroundWorkerClient struct {
 	mock.Mock
 }
 
+type BackgroundWorkerClient_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *BackgroundWorkerClient) EXPECT() *BackgroundWorkerClient_Expecter {
+	return &BackgroundWorkerClient_Expecter{mock: &_m.Mock}
+}
+
 // Enqueue provides a mock function with given fields: task, opts
 func (_m *BackgroundWorkerClient) Enqueue(task *asynq.Task, opts ...asynq.Option) (*asynq.TaskInfo, error) {
 	_va := make([]interface{}, len(opts))
@@ -41,6 +49,37 @@ func (_m *BackgroundWorkerClient) Enqueue(task *asynq.Task, opts ...asynq.Option
 	}
 
 	return r0, r1
+}
+
+// BackgroundWorkerClient_Enqueue_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Enqueue'
+type BackgroundWorkerClient_Enqueue_Call struct {
+	*mock.Call
+}
+
+// Enqueue is a helper method to define mock.On call
+//   - task *asynq.Task
+//   - opts ...asynq.Option
+func (_e *BackgroundWorkerClient_Expecter) Enqueue(task interface{}, opts ...interface{}) *BackgroundWorkerClient_Enqueue_Call {
+	return &BackgroundWorkerClient_Enqueue_Call{Call: _e.mock.On("Enqueue",
+		append([]interface{}{task}, opts...)...)}
+}
+
+func (_c *BackgroundWorkerClient_Enqueue_Call) Run(run func(task *asynq.Task, opts ...asynq.Option)) *BackgroundWorkerClient_Enqueue_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]asynq.Option, len(args)-1)
+		for i, a := range args[1:] {
+			if a != nil {
+				variadicArgs[i] = a.(asynq.Option)
+			}
+		}
+		run(args[0].(*asynq.Task), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *BackgroundWorkerClient_Enqueue_Call) Return(_a0 *asynq.TaskInfo, _a1 error) *BackgroundWorkerClient_Enqueue_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
 }
 
 type mockConstructorTestingTNewBackgroundWorkerClient interface {

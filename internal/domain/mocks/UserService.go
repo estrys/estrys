@@ -15,6 +15,14 @@ type UserService struct {
 	mock.Mock
 }
 
+type UserService_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *UserService) EXPECT() *UserService_Expecter {
+	return &UserService_Expecter{mock: &_m.Mock}
+}
+
 // BatchCreateUsers provides a mock function with given fields: ctx, allowedTwitterUsers
 func (_m *UserService) BatchCreateUsers(ctx context.Context, allowedTwitterUsers []string) error {
 	ret := _m.Called(ctx, allowedTwitterUsers)
@@ -27,6 +35,30 @@ func (_m *UserService) BatchCreateUsers(ctx context.Context, allowedTwitterUsers
 	}
 
 	return r0
+}
+
+// UserService_BatchCreateUsers_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'BatchCreateUsers'
+type UserService_BatchCreateUsers_Call struct {
+	*mock.Call
+}
+
+// BatchCreateUsers is a helper method to define mock.On call
+//   - ctx context.Context
+//   - allowedTwitterUsers []string
+func (_e *UserService_Expecter) BatchCreateUsers(ctx interface{}, allowedTwitterUsers interface{}) *UserService_BatchCreateUsers_Call {
+	return &UserService_BatchCreateUsers_Call{Call: _e.mock.On("BatchCreateUsers", ctx, allowedTwitterUsers)}
+}
+
+func (_c *UserService_BatchCreateUsers_Call) Run(run func(ctx context.Context, allowedTwitterUsers []string)) *UserService_BatchCreateUsers_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]string))
+	})
+	return _c
+}
+
+func (_c *UserService_BatchCreateUsers_Call) Return(_a0 error) *UserService_BatchCreateUsers_Call {
+	_c.Call.Return(_a0)
+	return _c
 }
 
 // GetFullUser provides a mock function with given fields: _a0, _a1
@@ -50,6 +82,30 @@ func (_m *UserService) GetFullUser(_a0 context.Context, _a1 string) (*domainmode
 	}
 
 	return r0, r1
+}
+
+// UserService_GetFullUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetFullUser'
+type UserService_GetFullUser_Call struct {
+	*mock.Call
+}
+
+// GetFullUser is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 string
+func (_e *UserService_Expecter) GetFullUser(_a0 interface{}, _a1 interface{}) *UserService_GetFullUser_Call {
+	return &UserService_GetFullUser_Call{Call: _e.mock.On("GetFullUser", _a0, _a1)}
+}
+
+func (_c *UserService_GetFullUser_Call) Run(run func(_a0 context.Context, _a1 string)) *UserService_GetFullUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *UserService_GetFullUser_Call) Return(_a0 *domainmodels.User, _a1 error) *UserService_GetFullUser_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
 }
 
 type mockConstructorTestingTNewUserService interface {

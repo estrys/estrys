@@ -16,6 +16,14 @@ type TwitterClient struct {
 	mock.Mock
 }
 
+type TwitterClient_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *TwitterClient) EXPECT() *TwitterClient_Expecter {
+	return &TwitterClient_Expecter{mock: &_m.Mock}
+}
+
 // GetTweets provides a mock function with given fields: _a0, _a1, _a2
 func (_m *TwitterClient) GetTweets(_a0 context.Context, _a1 string, _a2 twitter.UserTweetTimelineOpts) (*twitter.UserTweetTimelineResponse, error) {
 	ret := _m.Called(_a0, _a1, _a2)
@@ -39,6 +47,31 @@ func (_m *TwitterClient) GetTweets(_a0 context.Context, _a1 string, _a2 twitter.
 	return r0, r1
 }
 
+// TwitterClient_GetTweets_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTweets'
+type TwitterClient_GetTweets_Call struct {
+	*mock.Call
+}
+
+// GetTweets is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 string
+//   - _a2 twitter.UserTweetTimelineOpts
+func (_e *TwitterClient_Expecter) GetTweets(_a0 interface{}, _a1 interface{}, _a2 interface{}) *TwitterClient_GetTweets_Call {
+	return &TwitterClient_GetTweets_Call{Call: _e.mock.On("GetTweets", _a0, _a1, _a2)}
+}
+
+func (_c *TwitterClient_GetTweets_Call) Run(run func(_a0 context.Context, _a1 string, _a2 twitter.UserTweetTimelineOpts)) *TwitterClient_GetTweets_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(twitter.UserTweetTimelineOpts))
+	})
+	return _c
+}
+
+func (_c *TwitterClient_GetTweets_Call) Return(_a0 *twitter.UserTweetTimelineResponse, _a1 error) *TwitterClient_GetTweets_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
 // GetUser provides a mock function with given fields: ctx, username
 func (_m *TwitterClient) GetUser(ctx context.Context, username string) (*internaltwitter.User, error) {
 	ret := _m.Called(ctx, username)
@@ -60,6 +93,30 @@ func (_m *TwitterClient) GetUser(ctx context.Context, username string) (*interna
 	}
 
 	return r0, r1
+}
+
+// TwitterClient_GetUser_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUser'
+type TwitterClient_GetUser_Call struct {
+	*mock.Call
+}
+
+// GetUser is a helper method to define mock.On call
+//   - ctx context.Context
+//   - username string
+func (_e *TwitterClient_Expecter) GetUser(ctx interface{}, username interface{}) *TwitterClient_GetUser_Call {
+	return &TwitterClient_GetUser_Call{Call: _e.mock.On("GetUser", ctx, username)}
+}
+
+func (_c *TwitterClient_GetUser_Call) Run(run func(ctx context.Context, username string)) *TwitterClient_GetUser_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *TwitterClient_GetUser_Call) Return(_a0 *internaltwitter.User, _a1 error) *TwitterClient_GetUser_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
 }
 
 type mockConstructorTestingTNewTwitterClient interface {

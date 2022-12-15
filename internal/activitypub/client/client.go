@@ -80,7 +80,7 @@ func (t *httpSigRoundTripper) RoundTrip(request *http.Request) (*http.Response, 
 	return http.DefaultTransport.RoundTrip(request) //nolint:wrapcheck
 }
 
-//go:generate mockery --name=ActivityPubClient
+//go:generate mockery --with-expecter --name=ActivityPubClient
 type ActivityPubClient interface {
 	PostInbox(ctx context.Context, to *models.Actor, from *models.User, act pub.Activity) error
 }

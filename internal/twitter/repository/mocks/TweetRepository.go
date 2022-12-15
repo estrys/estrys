@@ -14,6 +14,14 @@ type TweetRepository struct {
 	mock.Mock
 }
 
+type TweetRepository_Expecter struct {
+	mock *mock.Mock
+}
+
+func (_m *TweetRepository) EXPECT() *TweetRepository_Expecter {
+	return &TweetRepository_Expecter{mock: &_m.Mock}
+}
+
 // GetTweet provides a mock function with given fields: _a0, _a1
 func (_m *TweetRepository) GetTweet(_a0 context.Context, _a1 string) (*models.Tweet, error) {
 	ret := _m.Called(_a0, _a1)
@@ -37,6 +45,30 @@ func (_m *TweetRepository) GetTweet(_a0 context.Context, _a1 string) (*models.Tw
 	return r0, r1
 }
 
+// TweetRepository_GetTweet_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetTweet'
+type TweetRepository_GetTweet_Call struct {
+	*mock.Call
+}
+
+// GetTweet is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 string
+func (_e *TweetRepository_Expecter) GetTweet(_a0 interface{}, _a1 interface{}) *TweetRepository_GetTweet_Call {
+	return &TweetRepository_GetTweet_Call{Call: _e.mock.On("GetTweet", _a0, _a1)}
+}
+
+func (_c *TweetRepository_GetTweet_Call) Run(run func(_a0 context.Context, _a1 string)) *TweetRepository_GetTweet_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string))
+	})
+	return _c
+}
+
+func (_c *TweetRepository_GetTweet_Call) Return(_a0 *models.Tweet, _a1 error) *TweetRepository_GetTweet_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
 // Store provides a mock function with given fields: _a0, _a1
 func (_m *TweetRepository) Store(_a0 context.Context, _a1 *models.Tweet) error {
 	ret := _m.Called(_a0, _a1)
@@ -49,6 +81,30 @@ func (_m *TweetRepository) Store(_a0 context.Context, _a1 *models.Tweet) error {
 	}
 
 	return r0
+}
+
+// TweetRepository_Store_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Store'
+type TweetRepository_Store_Call struct {
+	*mock.Call
+}
+
+// Store is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 *models.Tweet
+func (_e *TweetRepository_Expecter) Store(_a0 interface{}, _a1 interface{}) *TweetRepository_Store_Call {
+	return &TweetRepository_Store_Call{Call: _e.mock.On("Store", _a0, _a1)}
+}
+
+func (_c *TweetRepository_Store_Call) Run(run func(_a0 context.Context, _a1 *models.Tweet)) *TweetRepository_Store_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*models.Tweet))
+	})
+	return _c
+}
+
+func (_c *TweetRepository_Store_Call) Return(_a0 error) *TweetRepository_Store_Call {
+	_c.Call.Return(_a0)
+	return _c
 }
 
 type mockConstructorTestingTNewTweetRepository interface {
