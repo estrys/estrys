@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -44,6 +45,19 @@ func main() {
 		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			log.WithError(err).Fatal("Could not run migrations")
 		}
+	}
+
+	if conf.SentryDSN != "" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              conf.SentryDSN,
+			TracesSampleRate: 1.0,
+			AttachStacktrace: true,
+		})
+		if err != nil {
+			log.WithError(err).Error("unable to init sentry")
+			os.Exit(1)
+		}
+		log.Info("sentry initialized, errors will be reported")
 	}
 
 	if !conf.DisableEmbedWorker {

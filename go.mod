@@ -8,6 +8,7 @@ replace github.com/go-fed/activity => github.com/birdlephant/activity v0.0.0-202
 require (
 	github.com/friendsofgo/errors v0.9.2
 	github.com/g8rswimmer/go-twitter/v2 v2.1.4
+	github.com/getsentry/sentry-go v0.16.0
 	github.com/go-fed/activity v1.0.1-0.20220119073622-b14b50eecad0
 	github.com/go-fed/httpsig v1.1.0
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
@@ -57,7 +58,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
+	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.2.0 // indirect

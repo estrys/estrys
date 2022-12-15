@@ -46,7 +46,7 @@ func (u *userService) GetFullUser(ctx context.Context, username string) (*domain
 	user, err := u.repo.Get(ctx, username)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrUserDoesNotExist
+			return nil, errors.WithStack(ErrUserDoesNotExist)
 		}
 		return nil, err
 	}

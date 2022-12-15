@@ -111,12 +111,12 @@ func (a *inboxService) Follow(ctx context.Context, follow vocab.ActivityStreamsF
 		return errors.Wrap(err, "unable to get object url")
 	}
 	if objectURL.Host != a.config.Domain.Host {
-		return ErrFollowMismatchDomain
+		return errors.WithStack(ErrFollowMismatchDomain)
 	}
 	user, err := a.getUserFromURL(ctx, objectURL)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ErrUserDoesNotExist
+			return errors.WithStack(ErrUserDoesNotExist)
 		}
 		return err
 	}

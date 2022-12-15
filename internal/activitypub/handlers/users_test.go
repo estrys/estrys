@@ -265,6 +265,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
+			GoldenFile: "errors/user_not_found",
 			StatusCode: http.StatusNotFound,
 		},
 		{
@@ -347,6 +348,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
+			GoldenFile: "errors/user_not_found",
 			StatusCode: http.StatusNotFound,
 		},
 		{
@@ -429,6 +431,7 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
+			GoldenFile: "errors/user_not_found",
 			StatusCode: http.StatusNotFound,
 		},
 		{
@@ -509,6 +512,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox() {
 				)
 				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
 			},
+			GoldenFile: "errors/invalid_activity",
 			StatusCode: http.StatusBadRequest,
 		},
 	}
@@ -534,6 +538,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
 
 			},
+			GoldenFile: "errors/follow_domain_mismatch",
 			StatusCode: http.StatusBadRequest,
 		},
 		{
@@ -555,6 +560,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 					nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
+			GoldenFile: "errors/user_not_found",
 			StatusCode: http.StatusBadRequest,
 		},
 		{
@@ -601,6 +607,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 				})).Return(nil, nil)
 				_ = dic.Register[client.BackgroundWorkerClient](fakeWorker)
 			},
+			GoldenFile: "errors/actor_not_allowed_to_follow",
 			StatusCode: http.StatusForbidden,
 		},
 		{
@@ -684,6 +691,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_UnFollow() {
 					nil, sql.ErrNoRows)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 			},
+			GoldenFile: "errors/user_not_found",
 			StatusCode: http.StatusBadRequest,
 		},
 		{
@@ -700,6 +708,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_UnFollow() {
 				)
 				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
 			},
+			GoldenFile: "errors/cannot_undo",
 			StatusCode: http.StatusBadRequest,
 		},
 		{

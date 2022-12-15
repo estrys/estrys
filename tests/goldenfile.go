@@ -8,6 +8,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,23 +26,23 @@ func AssertJSONResponse(t *testing.T, fileName string, actual string) {
 	if *shouldUpdate {
 		err := os.WriteFile(filePath, []byte(actual), os.ModePerm)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatal(errors.Wrap(err, "unable to write goldenfile"))
 		}
 	}
 
 	var actualMap map[string]interface{}
 	err := json.Unmarshal([]byte(actual), &actualMap)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal(errors.Wrap(err, "unable to unmarshall response json"))
 	}
 	var expectedMap map[string]interface{}
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal(errors.Wrap(err, "unable to read golden file content"))
 	}
 	err = json.Unmarshal(fileContent, &expectedMap)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal(errors.Wrap(err, "unable to unmarshall goldenfile json"))
 	}
 	require.Equal(t, expectedMap, actualMap)
 }

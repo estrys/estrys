@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/estrys/estrys/internal/dic"
+	internalerrors "github.com/estrys/estrys/internal/errors"
 	dic_test "github.com/estrys/estrys/tests/dic"
 )
 
@@ -63,11 +64,9 @@ type HTTPTestCase struct {
 	Mock           func(t *testing.T)
 }
 
-type handler func(responseWriter http.ResponseWriter, request *http.Request)
-
 type HTTPTestSuite struct{}
 
-func (s *HTTPTestSuite) RunHTTPCases(t *testing.T, handler handler, cases []HTTPTestCase) {
+func (s *HTTPTestSuite) RunHTTPCases(t *testing.T, handler internalerrors.ErrorAwareHTTPHandler, cases []HTTPTestCase) {
 	t.Helper()
 	for _, testCase := range cases {
 		t.Run(testCase.Name, func(t *testing.T) {
@@ -84,7 +83,11 @@ func (s *HTTPTestSuite) RunHTTPCases(t *testing.T, handler handler, cases []HTTP
 	}
 }
 
-func (s *HTTPTestSuite) DoRequest(t *testing.T, handler handler, opts ...RequestOption) (*http.Response, []byte) {
+func (s *HTTPTestSuite) DoRequest(
+	t *testing.T,
+	handler internalerrors.ErrorAwareHTTPHandler,
+	opts ...RequestOption,
+) (*http.Response, []byte) {
 	t.Helper()
 	dic_test.BuildTestContainer(t)
 	defer dic.ResetContainer()
@@ -92,7 +95,7 @@ func (s *HTTPTestSuite) DoRequest(t *testing.T, handler handler, opts ...Request
 	request := createFakeRequest(opts)
 
 	responseRecorder := httptest.NewRecorder()
-	handler(responseRecorder, request)
+	internalerrors.HTTPErrorHandler(handler)(responseRecorder, request)
 	response := responseRecorder.Result()
 	body, err := io.ReadAll(responseRecorder.Result().Body)
 

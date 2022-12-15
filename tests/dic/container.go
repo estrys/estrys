@@ -24,6 +24,7 @@ func BuildTestContainer(t *testing.T) {
 	viper.Set("token", "token")
 	viper.Set("db_url", "foobar")
 	viper.Set("redis_address", "foobar")
+	viper.Set("sentry_dsn", "")
 	viper.Set("cache_twitter_user_ttl", "10s")
 
 	// Override here services for tests
