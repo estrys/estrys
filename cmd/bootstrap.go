@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/getsentry/sentry-go"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,6 +29,19 @@ func Bootstrap() (context.Context, context.CancelFunc, error) {
 	conf := dic.GetService[config.Config]()
 
 	log.WithField("pid", os.Getpid()).Debug("app starting")
+
+	if conf.SentryDSN != "" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              conf.SentryDSN,
+			TracesSampleRate: 1.0,
+			AttachStacktrace: true,
+		})
+		if err != nil {
+			log.WithError(err).Error("unable to init sentry")
+			os.Exit(1)
+		}
+		log.Info("sentry initialized, errors will be reported")
+	}
 
 	if err = dic.GetService[database.Database]().Connect(); err != nil {
 		cancelFunc()
