@@ -32,8 +32,13 @@ func Bootstrap() (context.Context, context.CancelFunc, error) {
 
 	if conf.SentryDSN != "" {
 		err := sentry.Init(sentry.ClientOptions{
-			Dsn:              conf.SentryDSN,
-			TracesSampleRate: conf.SentryTraceSampleRate,
+			Dsn: conf.SentryDSN,
+			TracesSampler: func(ctx sentry.SamplingContext) float64 {
+				if ctx.Span.Op == "poller_tweet" {
+					return conf.SentryTraceSampleRate
+				}
+				return 1
+			},
 			AttachStacktrace: true,
 			EnableTracing:    true,
 		})

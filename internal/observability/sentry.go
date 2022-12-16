@@ -7,7 +7,9 @@ import (
 )
 
 func StartTransaction(ctx context.Context, name string, options ...sentry.SpanOption) *sentry.Span {
-	return sentry.StartTransaction(ctx, name, options...)
+	tx := sentry.StartTransaction(ctx, name, options...)
+	tx.Op = name
+	return tx
 }
 
 func GetTraceIDFromContext(ctx context.Context) sentry.TraceID {
