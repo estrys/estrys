@@ -175,6 +175,7 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 		switch {
 		case errors.As(err, &notAllowedErr):
 			return internalerrors.Wrap(err, http.StatusForbidden).
+				SkipCapture().
 				WithUserMessage("not allowed to follow this user")
 		case errors.Is(err, streams.ErrNoCallbackMatch):
 			return internalerrors.Wrap(err, http.StatusBadRequest).

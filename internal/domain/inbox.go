@@ -125,6 +125,16 @@ func (a *inboxService) Follow(ctx context.Context, follow vocab.ActivityStreamsF
 		return err
 	}
 
+	actorURL, err := activitypub.GetActorURL(follow)
+	if err != nil {
+		return errors.Wrap(err, "unable to get actor url")
+	}
+
+	actor, err := a.createActorIfNoExist(ctx, actorURL)
+	if err != nil {
+		return errors.Wrap(err, "unable to create actor")
+	}
+
 	if !a.authorizationChecker.IsGranted(follow.GetActivityStreamsActor(), attributes.CanFollow) {
 		rejectFollowTask, err := tasks.NewRejectFollowTask(user.Username, follow)
 		if err != nil {
@@ -138,15 +148,6 @@ func (a *inboxService) Follow(ctx context.Context, follow vocab.ActivityStreamsF
 		return errors.WithStack(&ActorNotAllowedError{actor: follow.GetActivityStreamsActor()})
 	}
 
-	actorURL, err := activitypub.GetActorURL(follow)
-	if err != nil {
-		return errors.Wrap(err, "unable to get actor url")
-	}
-
-	actor, err := a.createActorIfNoExist(ctx, actorURL)
-	if err != nil {
-		return errors.Wrap(err, "unable to create actor")
-	}
 	err = a.userRepo.Follow(ctx, user, actor)
 	if err != nil {
 		return errors.Wrap(err, "unable to follow actor")
