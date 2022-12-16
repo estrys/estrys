@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
-	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/observability"
 )
 
 type Config struct {
@@ -21,18 +21,19 @@ type Config struct {
 func StartServer(ctx context.Context, cfg Config) error {
 	muxRouter := dic.GetService[*mux.Router]()
 	log := dic.GetService[logger.Logger]()
-	sentryHandler := sentryhttp.New(sentryhttp.Options{})
 
-	handler := sentryHandler.HandleFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		vars := mux.Vars(request)
-		fields := logrus.Fields{}
-		for k, v := range vars {
-			fields[k] = v
-		}
-		fields["querystring"] = request.URL.RawQuery
-		log.WithFields(fields).Debugf("%s %s", request.Method, request.URL.Path)
-		muxRouter.ServeHTTP(responseWriter, request)
-	})
+	handler := observability.HandleFunc(
+		muxRouter,
+		func(responseWriter http.ResponseWriter, request *http.Request) {
+			vars := mux.Vars(request)
+			fields := logrus.Fields{}
+			for k, v := range vars {
+				fields[k] = v
+			}
+			fields["querystring"] = request.URL.RawQuery
+			log.WithFields(fields).Debugf("%s %s", request.Method, request.URL.Path)
+			muxRouter.ServeHTTP(responseWriter, request)
+		})
 
 	srv := &http.Server{
 		Handler:      handler,
