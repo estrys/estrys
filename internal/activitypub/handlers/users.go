@@ -26,34 +26,22 @@ func HandleUser(responseWriter http.ResponseWriter, request *http.Request) error
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "user not found",
-				HTTPCode:    http.StatusNotFound,
-			}
+			return internalerrors.Wrap(err, http.StatusNotFound).
+				WithUserMessage("user not found")
 		}
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	actor, err := vocabService.GetActor(user)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(actor)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -66,34 +54,22 @@ func HandleFollowing(responseWriter http.ResponseWriter, request *http.Request) 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "user not found",
-				HTTPCode:    http.StatusNotFound,
-			}
+			return internalerrors.Wrap(err, http.StatusNotFound).
+				WithUserMessage("user not found")
 		}
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	following, err := vocabService.GetFollowing(user)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(following)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -106,34 +82,22 @@ func HandleFollowers(responseWriter http.ResponseWriter, request *http.Request) 
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "user not found",
-				HTTPCode:    http.StatusNotFound,
-			}
+			return internalerrors.Wrap(err, http.StatusNotFound).
+				WithUserMessage("user not found")
 		}
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	followers, err := vocabService.GetFollowers(user)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(followers)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	return nil
@@ -147,44 +111,29 @@ func HandleOutbox(responseWriter http.ResponseWriter, request *http.Request) err
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "user not found",
-				HTTPCode:    http.StatusNotFound,
-			}
+			return internalerrors.Wrap(err, http.StatusNotFound).
+				WithUserMessage("user not found")
 		}
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	vocabService := dic.GetService[activitypub.VocabService]()
 	outbox, err := vocabService.GetOutbox(user)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	responseWriter.Header().Add("content-type", "application/activity+json")
 	err = json.NewEncoder(responseWriter).Encode(outbox)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 	return nil
 }
 
 func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) error {
 	if !auth.IsRequestSigned(request) {
-		return internalerrors.HandlerError{
-			UserMessage: "request signature failed",
-			HTTPCode:    http.StatusForbidden,
-		}
+		return internalerrors.New("request signature failed", http.StatusForbidden)
 	}
 
 	vars := mux.Vars(request)
@@ -194,16 +143,10 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 	if err != nil {
 		var twitterUserNotFound twitter.UsernameNotFoundError
 		if errors.As(err, &twitterUserNotFound) {
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "user not found",
-				HTTPCode:    http.StatusNotFound,
-			}
+			return internalerrors.Wrap(err, http.StatusNotFound).
+				WithUserMessage("user not found")
 		}
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
 	}
 
 	inboxService := dic.GetService[domain.InboxService]()
@@ -213,17 +156,17 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 		inboxService.UnFollow,
 	)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(
+			err,
+			http.StatusInternalServerError,
+		)
 	}
 	err = json.NewDecoder(request.Body).Decode(&jsonMap)
 	if err != nil {
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(
+			err,
+			http.StatusInternalServerError,
+		)
 	}
 	err = jsonResolver.Resolve(request.Context(), jsonMap)
 	if err != nil {
@@ -231,40 +174,29 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 		var notAllowedUndo *domain.UnsuportedUndoObjectError
 		switch {
 		case errors.As(err, &notAllowedErr):
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "not allowed to follow this user",
-				HTTPCode:    http.StatusForbidden,
-			}
+			return internalerrors.Wrap(err, http.StatusForbidden).
+				WithUserMessage("not allowed to follow this user")
 		case errors.Is(err, streams.ErrNoCallbackMatch):
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "unsupported activity",
-				HTTPCode:    http.StatusBadRequest,
-			}
+			return internalerrors.Wrap(err, http.StatusBadRequest).
+				WithUserMessage("unsupported activity")
 		case errors.Is(err, domain.ErrFollowMismatchDomain):
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "cannot follow a user that is not on this instance",
-				HTTPCode:    http.StatusBadRequest,
-			}
+			return internalerrors.Wrap(err, http.StatusBadRequest).
+				WithUserMessage("cannot follow a user that is not on this instance")
 		case errors.As(err, &notAllowedUndo):
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "can only undo Follow activities",
-				HTTPCode:    http.StatusBadRequest,
+			err := internalerrors.Wrap(err, http.StatusBadRequest).
+				WithUserMessage("can only undo Follow activities")
+			if notAllowedUndo.VocabType != nil {
+				return err.WithContext("activity_type", notAllowedUndo.VocabType.GetTypeName())
 			}
+			return err
 		case errors.Is(err, domain.ErrUserDoesNotExist):
-			return internalerrors.HandlerError{
-				Cause:       err,
-				UserMessage: "user not found",
-				HTTPCode:    http.StatusBadRequest,
-			}
+			return internalerrors.Wrap(err, http.StatusBadRequest).
+				WithUserMessage("user not found")
 		}
-		return internalerrors.HandlerError{
-			Cause:    err,
-			HTTPCode: http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(
+			err,
+			http.StatusInternalServerError,
+		)
 	}
 	responseWriter.WriteHeader(http.StatusAccepted)
 	return nil

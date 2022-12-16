@@ -69,7 +69,7 @@ func (suite *StatusHandlerTestSuite) TestHandleStatus() {
 			Mock: func(t *testing.T) {
 				fakeUserService := mocks.NewUserService(t)
 				fakeUserService.On("GetFullUser", mock.Anything, fakeUser.Username).Return(
-					nil, domain.ErrUserDoesNotExist,
+					nil, errors.WithStack(domain.ErrUserDoesNotExist),
 				)
 				_ = dic.Register[domain.UserService](fakeUserService)
 			},

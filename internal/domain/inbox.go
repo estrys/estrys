@@ -26,11 +26,15 @@ import (
 )
 
 type UnsuportedUndoObjectError struct {
-	ty vocab.Type
+	VocabType vocab.Type
 }
 
 func (u *UnsuportedUndoObjectError) Error() string {
-	return fmt.Sprintf("do not support undo on %s activities", u.ty.GetTypeName())
+	actType := "unknown_type"
+	if u.VocabType != nil {
+		actType = u.VocabType.GetTypeName()
+	}
+	return fmt.Sprintf("do not support undo on '%s' activities", actType)
 }
 
 type ActorNotAllowedError struct {
@@ -131,7 +135,7 @@ func (a *inboxService) Follow(ctx context.Context, follow vocab.ActivityStreamsF
 			return errors.Wrap(err, "unable to schedule reject follow task")
 		}
 
-		return &ActorNotAllowedError{actor: follow.GetActivityStreamsActor()}
+		return errors.WithStack(&ActorNotAllowedError{actor: follow.GetActivityStreamsActor()})
 	}
 
 	actorURL, err := activitypub.GetActorURL(follow)
@@ -204,7 +208,7 @@ func (a *inboxService) UnFollow(ctx context.Context, act vocab.ActivityStreamsUn
 	}
 	obj := object.Begin()
 	if !obj.IsActivityStreamsFollow() {
-		return &UnsuportedUndoObjectError{obj.GetType()}
+		return errors.WithStack(&UnsuportedUndoObjectError{obj.GetType()})
 	}
 
 	followActivity := obj.GetActivityStreamsFollow()

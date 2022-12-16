@@ -9,7 +9,7 @@ import (
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/domain"
 	"github.com/estrys/estrys/internal/domain/status/views"
-	"github.com/estrys/estrys/internal/errors"
+	internalerrors "github.com/estrys/estrys/internal/errors"
 	"github.com/estrys/estrys/internal/router/routes"
 	"github.com/estrys/estrys/internal/router/urlgenerator"
 	"github.com/estrys/estrys/internal/twitter/repository"
@@ -24,28 +24,19 @@ func HandleStatus(responseWriter http.ResponseWriter, request *http.Request) err
 	username := vars["username"]
 	tweetID := vars["id"]
 	if username == "" || tweetID == "" {
-		return errors.HandlerError{
-			UserMessage: "either username or id is not set",
-			HTTPCode:    http.StatusBadRequest,
-		}
+		return internalerrors.New("either username or id is not set", http.StatusBadRequest)
 	}
 
 	user, err := userService.GetFullUser(request.Context(), username)
 	if err != nil {
-		return errors.HandlerError{
-			Cause:       err,
-			UserMessage: "user not found",
-			HTTPCode:    http.StatusNotFound,
-		}
+		return internalerrors.Wrap(err, http.StatusNotFound).
+			WithUserMessage("user not found")
 	}
 
 	tweet, err := tweetRepository.GetTweet(request.Context(), tweetID)
 	if err != nil {
-		return errors.HandlerError{
-			Cause:       err,
-			UserMessage: "tweet not found",
-			HTTPCode:    http.StatusNotFound,
-		}
+		return internalerrors.Wrap(err, http.StatusNotFound).
+			WithUserMessage("tweet not found")
 	}
 
 	templateContent, _ := views.Views.ReadFile("status.html")
@@ -58,11 +49,8 @@ func HandleStatus(responseWriter http.ResponseWriter, request *http.Request) err
 		urlgenerator.OptionAbsoluteURL,
 	)
 	if err != nil {
-		return errors.HandlerError{
-			Cause:       err,
-			UserMessage: "unable to generate status URL",
-			HTTPCode:    http.StatusInternalServerError,
-		}
+		return internalerrors.Wrap(err, http.StatusInternalServerError).
+			WithUserMessage("unable to generate status URL")
 	}
 
 	_ = statusTemplate.Execute(responseWriter, map[string]interface{}{

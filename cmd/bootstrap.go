@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"context"
-	"github.com/getsentry/sentry-go"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
 
 	"github.com/estrys/estrys/internal/cache"
@@ -35,6 +35,7 @@ func Bootstrap() (context.Context, context.CancelFunc, error) {
 			Dsn:              conf.SentryDSN,
 			TracesSampleRate: 1.0,
 			AttachStacktrace: true,
+			EnableTracing:    true,
 		})
 		if err != nil {
 			cancelFunc()

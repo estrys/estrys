@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -19,9 +20,10 @@ type Config struct {
 
 func StartServer(ctx context.Context, cfg Config) error {
 	muxRouter := dic.GetService[*mux.Router]()
-
 	log := dic.GetService[logger.Logger]()
-	handler := http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
+	sentryHandler := sentryhttp.New(sentryhttp.Options{})
+
+	handler := sentryHandler.HandleFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		vars := mux.Vars(request)
 		fields := logrus.Fields{}
 		for k, v := range vars {

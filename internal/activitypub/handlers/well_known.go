@@ -9,44 +9,32 @@ import (
 	"github.com/estrys/estrys/internal/config"
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/domain"
-	"github.com/estrys/estrys/internal/errors"
+	internalerrors "github.com/estrys/estrys/internal/errors"
 )
 
 func HandleWebFinger(responseWriter http.ResponseWriter, request *http.Request) error {
 	resource := request.URL.Query().Get("resource")
 	resourceSplit := strings.Split(resource, ":")
 	if len(resourceSplit) != 2 {
-		return errors.HandlerError{
-			UserMessage: "resource parameter should start with 'acct:'",
-			HTTPCode:    http.StatusBadRequest,
-		}
+		return internalerrors.New("resource parameter should start with 'acct:'", http.StatusBadRequest)
 	}
 	splittedUserAddress := strings.Split(resourceSplit[1], "@")
 	if len(splittedUserAddress) != 2 {
-		return errors.HandlerError{
-			UserMessage: "username invalid",
-			HTTPCode:    http.StatusBadRequest,
-		}
+		return internalerrors.New("username invalid", http.StatusBadRequest)
 	}
 	username := splittedUserAddress[0]
 	instance := splittedUserAddress[1]
 	conf := dic.GetService[config.Config]()
 
 	if instance != conf.Domain.Host {
-		return errors.HandlerError{
-			UserMessage: "requested user is not on this instance",
-			HTTPCode:    http.StatusNotFound,
-		}
+		return internalerrors.New("requested user is not on this instance", http.StatusNotFound)
 	}
 
 	userService := dic.GetService[domain.UserService]()
 	user, err := userService.GetFullUser(request.Context(), username)
 	if err != nil {
-		return errors.HandlerError{
-			Cause:       err,
-			UserMessage: "user not found",
-			HTTPCode:    http.StatusNotFound,
-		}
+		return internalerrors.Wrap(err, http.StatusNotFound).
+			WithUserMessage("user not found")
 	}
 
 	templateContent, _ := views.Views.ReadFile("well_known/webfinger.json.tmpl")

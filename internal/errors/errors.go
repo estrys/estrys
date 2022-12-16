@@ -14,14 +14,76 @@ import (
 	"github.com/estrys/estrys/internal/logger"
 )
 
-type HandlerError struct {
-	Cause       error
-	UserMessage string
-	HTTPCode    int
+type errorWithStack interface {
+	Error() string
+	StackTrace() errors.StackTrace
 }
 
-func (h HandlerError) Error() string {
-	return h.UserMessage
+type handlerError struct {
+	Cause             error
+	UserMessage       string
+	HTTPCode          int
+	SkipErrorCapture  bool
+	stack             errors.StackTrace
+	additionalContext map[string]any
+}
+
+func (h handlerError) Error() string {
+	message := h.UserMessage
+	if h.Cause != nil {
+		if message != "" {
+			message += ": "
+		}
+		message += h.Cause.Error()
+	}
+	return message
+}
+
+func (h handlerError) StackTrace() errors.StackTrace {
+	return h.stack
+}
+
+func (h handlerError) SkipCapture() handlerError {
+	h.SkipErrorCapture = true
+	return h
+}
+
+func (h handlerError) WithHTTPCode(code int) handlerError {
+	h.HTTPCode = code
+	return h
+}
+
+func (h handlerError) WithUserMessage(message string) handlerError {
+	h.UserMessage = message
+	return h
+}
+
+func (h handlerError) WithContext(key string, value any) handlerError {
+	h.additionalContext[key] = value
+	return h
+}
+
+func (h handlerError) GetContext() map[string]any {
+	return h.additionalContext
+}
+
+func New(userMessage string, httpCode int) handlerError {
+	return Wrap(errors.New(userMessage), httpCode)
+}
+
+func Wrap(err error, httpCode int) handlerError {
+	newErr := handlerError{
+		Cause:             err,
+		HTTPCode:          httpCode,
+		additionalContext: make(map[string]any, 0),
+	}
+
+	//nolint:errorlint
+	if stackErr, ok := err.(errorWithStack); ok {
+		newErr.stack = stackErr.StackTrace()
+	}
+
+	return newErr
 }
 
 type ErrorAwareHTTPHandler func(w http.ResponseWriter, req *http.Request) error
@@ -29,32 +91,39 @@ type ErrorAwareHTTPHandler func(w http.ResponseWriter, req *http.Request) error
 func HTTPErrorHandler(handler ErrorAwareHTTPHandler) func(w http.ResponseWriter, req *http.Request) {
 	log := dic.GetService[logger.Logger]()
 	return func(responseWriter http.ResponseWriter, request *http.Request) {
-		defer func() {
-			if recovered := recover(); recovered != nil {
-				sentry.WithScope(func(scope *sentry.Scope) {
-					scope.SetRequest(request)
+		// Fetch the sentry hub from request context
+		// It can be null in testing context
+		hub := sentry.GetHubFromContext(request.Context())
+		if hub != nil {
+			hub.ConfigureScope(func(scope *sentry.Scope) {
+				scope.SetRequest(request)
+			})
+		}
+		if hub != nil {
+			defer func() {
+				if recovered := recover(); recovered != nil {
 					if err, isErr := recovered.(error); isErr {
-						sentry.CaptureException(err)
+						hub.CaptureException(err)
 						return
 					} else {
-						sentry.CurrentHub().Recover(recovered)
+						hub.Recover(recovered)
 					}
-				})
-				log.Errorf("panic: %s %s", recovered, debug.Stack())
-			}
-		}()
-		err := handler(responseWriter, request)
-		var handlerError HandlerError
-		if errors.As(err, &handlerError) {
-			sentry.WithScope(func(scope *sentry.Scope) {
-				scope.SetRequest(request)
-				if handlerError.Cause != nil {
-					sentry.CaptureException(handlerError.Cause)
-				} else {
-					sentry.CaptureException(handlerError)
+					log.Errorf("panic: %s %s", recovered, debug.Stack())
 				}
-			})
+			}()
+		}
+		err := handler(responseWriter, request)
+		var handlerError handlerError
+		if errors.As(err, &handlerError) {
 			log.WithError(err).Error("Error handling http request")
+			if !handlerError.SkipErrorCapture && hub != nil {
+				if additionalContext := handlerError.GetContext(); len(additionalContext) > 0 {
+					hub.ConfigureScope(func(scope *sentry.Scope) {
+						scope.SetContext("error", additionalContext)
+					})
+				}
+				hub.CaptureException(handlerError)
+			}
 			var respBody []byte
 			if handlerError.UserMessage != "" {
 				responseWriter.Header().Add("content-type", "application/json")
@@ -73,8 +142,11 @@ func AsynqErrorHandler() asynq.ErrorHandlerFunc {
 	return func(ctx context.Context, task *asynq.Task, err error) {
 		log.WithError(err).Error("Background task failed")
 		sentry.WithScope(func(scope *sentry.Scope) {
-			scope.SetTag("type", task.Type())
-			scope.SetRequestBody(task.Payload())
+			scope.SetContext("task", map[string]interface{}{
+				"task_type": task.Type(),
+				"payload":   string(task.Payload()),
+			})
+			scope.SetTag("task_type", task.Type())
 			sentry.CaptureException(err)
 		})
 	}
