@@ -586,6 +586,12 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 					}, nil)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
 
+				fakeActor := &models.Actor{}
+				fakeActorUrl, _ := url.Parse("https://another-instance.example.com/users/validactor")
+				fakeActorRepo := mocksuser.NewActorRepository(t)
+				fakeActorRepo.On("Get", mock.Anything, fakeActorUrl).Return(fakeActor, nil)
+				_ = dic.Register[repository.ActorRepository](fakeActorRepo)
+
 				fakeWorker := mocks.NewBackgroundWorkerClient(t)
 				fakeWorker.On("Enqueue", mock.MatchedBy(func(task *asynq.Task) bool {
 					expectedAccept := tasks.RejectFollowInput{
