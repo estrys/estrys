@@ -106,10 +106,13 @@ func NewActivityPubClient(
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create an http request signer")
 	}
-	client.Transport = &httpSigRoundTripper{
-		signer:       signer,
-		urlGenerator: urlGenerator,
-		mu:           &sync.Mutex{},
+	client.Transport = &logger.HTTPLoggerRoundTripper{
+		RoundTripper: &httpSigRoundTripper{
+			signer:       signer,
+			urlGenerator: urlGenerator,
+			mu:           &sync.Mutex{},
+		},
+		Log: log,
 	}
 	return &activityPubClient{
 		client: client,

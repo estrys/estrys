@@ -18,7 +18,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/hibiken/asynq v0.23.0
 	github.com/jackc/pgx/v5 v5.1.1
-	github.com/motemen/go-loghttp v0.0.0-20170804080138-974ac5ceac27
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.14.0
@@ -44,7 +43,6 @@ require (
 	github.com/lib/pq v1.10.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/motemen/go-nuts v0.0.0-20220604134737-2658d0104f31 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

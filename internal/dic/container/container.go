@@ -70,7 +70,10 @@ func BuildContainer() error {
 			Token: conf.Token,
 		},
 		Client: &http.Client{
-			Transport: logger.GetResponseLogger(dic.GetService[logger.Logger]()),
+			Transport: &logger.HTTPLoggerRoundTripper{
+				RoundTripper: http.DefaultTransport,
+				Log:          dic.GetService[logger.Logger](),
+			},
 		},
 		Host: "https://api.twitter.com",
 	})

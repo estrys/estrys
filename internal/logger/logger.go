@@ -54,7 +54,7 @@ func (l *logger) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 		startTime: time.Now(),
 		sql:       data.SQL,
 		args:      args,
-		span:      observability.StartSpan(ctx, "db_query", map[string]any{"sql": data.SQL}),
+		span:      observability.StartSpan(ctx, "db", map[string]any{"db.system": "postgres", "db.query": data.SQL}),
 	})
 }
 

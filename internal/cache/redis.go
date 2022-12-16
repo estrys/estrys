@@ -40,14 +40,14 @@ func (r redisCache[T]) Set(ctx context.Context, key string, value T, opts ...Opt
 			timeout = time.Duration(t)
 		}
 	}
-	span := observability.StartSpan(ctx, "redis_set", map[string]any{"key": key})
+	span := observability.StartSpan(ctx, "cache.save", map[string]any{"db.system": "redis", "cache.key": key})
 	r.client.Set(ctx, key, serializedValue, timeout)
 	observability.FinishSpan(span)
 	return nil
 }
 
 func (r redisCache[T]) Get(ctx context.Context, key string) (*T, error) {
-	span := observability.StartSpan(ctx, "redis_get", map[string]any{"key": key})
+	span := observability.StartSpan(ctx, "cache.get_item", map[string]any{"db.system": "redis", "cache.key": key})
 	var result T
 	item, err := r.client.Get(ctx, key).Result()
 	observability.FinishSpan(span)
