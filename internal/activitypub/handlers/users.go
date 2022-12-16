@@ -133,7 +133,7 @@ func HandleOutbox(responseWriter http.ResponseWriter, request *http.Request) err
 
 func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) error {
 	if !auth.IsRequestSigned(request) {
-		return internalerrors.New("request signature failed", http.StatusForbidden)
+		return internalerrors.New("request signature failed", http.StatusForbidden).SkipCapture()
 	}
 
 	vars := mux.Vars(request)
