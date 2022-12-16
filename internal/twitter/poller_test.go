@@ -152,12 +152,12 @@ func Test_twitterPoller_Start(t *testing.T) {
 
 				worker.On("Enqueue", mock.MatchedBy(func(t *asynq.Task) bool {
 					payload := string(t.Payload())
-					expectedPayload := `{"from":"foobar","to":"https://example.com/actor_url","tweet":{"id":"1337","text":"tweet content","published":"2006-01-02T15:04:05Z","sensitive":true}}`
+					expectedPayload := `{"trace_id":"00000000000000000000000000000000","from":"foobar","to":"https://example.com/actor_url","tweet":{"id":"1337","text":"tweet content","published":"2006-01-02T15:04:05Z","sensitive":true}}`
 					return t.Type() == tasks.TypeSendTweet && payload == expectedPayload
 				})).Return(nil, nil)
 				worker.On("Enqueue", mock.MatchedBy(func(t *asynq.Task) bool {
 					payload := string(t.Payload())
-					expectedPayload := `{"from":"foobar","to":"https://example.com/another_actor_url","tweet":{"id":"1337","text":"tweet content","published":"2006-01-02T15:04:05Z","sensitive":true}}`
+					expectedPayload := `{"trace_id":"00000000000000000000000000000000","from":"foobar","to":"https://example.com/another_actor_url","tweet":{"id":"1337","text":"tweet content","published":"2006-01-02T15:04:05Z","sensitive":true}}`
 					return t.Type() == tasks.TypeSendTweet && payload == expectedPayload
 				})).Return(nil, nil)
 

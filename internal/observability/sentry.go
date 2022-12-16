@@ -1,0 +1,35 @@
+package observability
+
+import (
+	"context"
+
+	"github.com/getsentry/sentry-go"
+)
+
+func StartTransaction(ctx context.Context, name string, options ...sentry.SpanOption) *sentry.Span {
+	return sentry.StartTransaction(ctx, name, options...)
+}
+
+func GetTraceIDFromContext(ctx context.Context) sentry.TraceID {
+	tx := sentry.TransactionFromContext(ctx)
+	if tx == nil {
+		return [16]byte{}
+	}
+	return tx.TraceID
+}
+
+func StartSpan(ctx context.Context, name string, data map[string]any) *sentry.Span {
+	transaction := sentry.TransactionFromContext(ctx)
+	if transaction == nil {
+		return nil
+	}
+	return transaction.StartChild(name, func(s *sentry.Span) {
+		s.Data = data
+	})
+}
+
+func FinishSpan(span *sentry.Span) {
+	if span != nil {
+		span.Finish()
+	}
+}

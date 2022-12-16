@@ -10,6 +10,7 @@ import (
 
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/models"
+	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/repository"
 	twittermodels "github.com/estrys/estrys/internal/twitter/models"
 	"github.com/estrys/estrys/internal/worker/client"
@@ -68,11 +69,15 @@ func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 }
 
 func (c *twitterPoller) FetchTweets(ctx context.Context) error {
+	tx := observability.StartTransaction(ctx, "poll_tweets")
 	if len(c.users) == c.userIndex {
 		c.log.WithField("index", c.userIndex).Trace("polled all twitter users from list, restarting ...")
 		c.userIndex = 0
 		err := c.RefreshUserList(ctx)
 		if err != nil {
+			if errors.Is(err, ErrNoUserToPoll) {
+				return nil
+			}
 			return err
 		}
 	}
@@ -114,7 +119,7 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 				continue
 			}
 			for _, actor := range actors {
-				sendTweetTask, err := tasks.NewSendTweet(user, actor, twittermodels.Tweet{
+				sendTweetTask, err := tasks.NewSendTweet(ctx, user, actor, twittermodels.Tweet{
 					ID:        tweet.ID,
 					Text:      tweet.Text,
 					Published: createdAt,
@@ -133,6 +138,11 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 		}
 		c.userCursors[c.users[c.userIndex].Username] = tweets.Meta.NewestID
 	}
+	tx.Data = map[string]interface{}{
+		"new_tweets_count": tweets.Meta.ResultCount,
+		"users_count":      len(c.users),
+	}
+	tx.Finish()
 	c.userIndex++
 	return nil
 }

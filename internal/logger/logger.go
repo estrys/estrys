@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5"
 	"github.com/sirupsen/logrus"
 
 	"github.com/estrys/estrys/internal/config"
+	"github.com/estrys/estrys/internal/observability"
 )
 
 type contextKey int
@@ -20,6 +22,7 @@ type traceQueryData struct {
 	startTime time.Time
 	sql       string
 	args      []any
+	span      *sentry.Span
 }
 
 type Logger interface {
@@ -51,11 +54,13 @@ func (l *logger) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.Trac
 		startTime: time.Now(),
 		sql:       data.SQL,
 		args:      args,
+		span:      observability.StartSpan(ctx, "db_query", map[string]any{"sql": data.SQL}),
 	})
 }
 
 func (l *logger) TraceQueryEnd(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryEndData) {
 	queryData := ctx.Value(tracelogQueryCtxKey).(*traceQueryData) //nolint:forcetypeassert
+	observability.FinishSpan(queryData.span)
 	endTime := time.Now()
 	interval := endTime.Sub(queryData.startTime)
 	l.WithFields(logrus.Fields{

@@ -33,7 +33,7 @@ func Bootstrap() (context.Context, context.CancelFunc, error) {
 	if conf.SentryDSN != "" {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn:              conf.SentryDSN,
-			TracesSampleRate: 1.0,
+			TracesSampleRate: conf.SentryTraceSampleRate,
 			AttachStacktrace: true,
 			EnableTracing:    true,
 		})

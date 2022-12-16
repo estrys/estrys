@@ -136,7 +136,7 @@ func (a *inboxService) Follow(ctx context.Context, follow vocab.ActivityStreamsF
 	}
 
 	if !a.authorizationChecker.IsGranted(follow.GetActivityStreamsActor(), attributes.CanFollow) {
-		rejectFollowTask, err := tasks.NewRejectFollowTask(user.Username, follow)
+		rejectFollowTask, err := tasks.NewRejectFollowTask(ctx, user.Username, follow)
 		if err != nil {
 			return errors.Wrap(err, "unable to create reject follow task")
 		}
@@ -153,7 +153,7 @@ func (a *inboxService) Follow(ctx context.Context, follow vocab.ActivityStreamsF
 		return errors.Wrap(err, "unable to follow actor")
 	}
 
-	acceptFollowTask, err := tasks.NewAcceptFollowTask(user.Username, follow)
+	acceptFollowTask, err := tasks.NewAcceptFollowTask(ctx, user.Username, follow)
 	if err != nil {
 		return errors.Wrap(err, "unable to create accept follow task")
 	}

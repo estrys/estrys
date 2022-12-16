@@ -15,6 +15,7 @@ import (
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/models"
+	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/repository"
 	twittermodels "github.com/estrys/estrys/internal/twitter/models"
 	twitterrepository "github.com/estrys/estrys/internal/twitter/repository"
@@ -22,16 +23,23 @@ import (
 )
 
 type SendTweetInput struct {
-	From  string              `json:"from"`
-	To    string              `json:"to"`
-	Tweet twittermodels.Tweet `json:"tweet"`
+	TraceID string              `json:"trace_id,omitempty"`
+	From    string              `json:"from"`
+	To      string              `json:"to"`
+	Tweet   twittermodels.Tweet `json:"tweet"`
 }
 
-func NewSendTweet(user *models.User, actor *models.Actor, tweet twittermodels.Tweet) (*asynq.Task, error) {
+func NewSendTweet(
+	ctx context.Context,
+	user *models.User,
+	actor *models.Actor,
+	tweet twittermodels.Tweet,
+) (*asynq.Task, error) {
 	payload, err := json.Marshal(SendTweetInput{
-		From:  user.Username,
-		To:    actor.URL,
-		Tweet: tweet,
+		TraceID: observability.GetTraceIDFromContext(ctx).String(),
+		From:    user.Username,
+		To:      actor.URL,
+		Tweet:   tweet,
 	})
 	if err != nil {
 		return nil, err //nolint:wrapcheck

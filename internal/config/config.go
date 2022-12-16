@@ -25,6 +25,7 @@ type Config struct {
 	TwitterAllowedUsers        []string      `mapstructure:"twitter_allowed_users"`
 	RunMigrations              bool          `mapstructure:"run_migrations"`
 	SentryDSN                  string        `mapstructure:"sentry_dsn"`
+	SentryTraceSampleRate      float64       `mapstructure:"sentry_trace_sample_rate"`
 }
 
 type Loader interface {
