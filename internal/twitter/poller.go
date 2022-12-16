@@ -71,7 +71,6 @@ func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 	tx := observability.StartTransaction(ctx, "poll_tweets")
 	ctx = tx.Context()
-	defer tx.Finish()
 	if len(c.users) == c.userIndex {
 		c.log.WithField("index", c.userIndex).Trace("polled all twitter users from list, restarting ...")
 		c.userIndex = 0
@@ -144,6 +143,7 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 		"new_tweets_count": tweets.Meta.ResultCount,
 		"users_count":      len(c.users),
 	}
+	tx.Finish()
 	c.userIndex++
 	return nil
 }
