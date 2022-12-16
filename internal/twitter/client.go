@@ -3,7 +3,6 @@ package twitter
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/g8rswimmer/go-twitter/v2"
@@ -12,14 +11,6 @@ import (
 	"github.com/estrys/estrys/internal/cache"
 	"github.com/estrys/estrys/internal/logger"
 )
-
-type Authorizer struct {
-	Token string
-}
-
-func (a Authorizer) Add(req *http.Request) {
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", a.Token))
-}
 
 const (
 	TwitterErrorTypeNotFound = "https://api.twitter.com/2/problems/resource-not-found"

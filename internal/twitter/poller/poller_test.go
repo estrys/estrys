@@ -3,12 +3,12 @@ package poller_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/getsentry/sentry-go"
 	"reflect"
 	"testing"
 	"time"
 
 	gotwitter "github.com/g8rswimmer/go-twitter/v2"
+	"github.com/getsentry/sentry-go"
 	"github.com/hibiken/asynq"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
