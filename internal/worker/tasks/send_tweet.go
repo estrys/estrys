@@ -23,7 +23,8 @@ import (
 )
 
 type SendTweetInput struct {
-	TraceID string              `json:"trace_id,omitempty"`
+	TraceID string              `json:"trace_id"`
+	Bagage  string              `json:"bagage"`
 	From    string              `json:"from"`
 	To      string              `json:"to"`
 	Tweet   twittermodels.Tweet `json:"tweet"`
@@ -36,7 +37,7 @@ func NewSendTweet(
 	tweet twittermodels.Tweet,
 ) (*asynq.Task, error) {
 	payload, err := json.Marshal(SendTweetInput{
-		TraceID: observability.GetTraceIDFromContext(ctx).String(),
+		TraceID: observability.GetTraceIDFromContext(ctx),
 		From:    user.Username,
 		To:      actor.URL,
 		Tweet:   tweet,

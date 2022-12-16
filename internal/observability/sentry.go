@@ -12,12 +12,12 @@ func StartTransaction(ctx context.Context, name string, options ...sentry.SpanOp
 	return tx
 }
 
-func GetTraceIDFromContext(ctx context.Context) sentry.TraceID {
+func GetTraceIDFromContext(ctx context.Context) string {
 	tx := sentry.TransactionFromContext(ctx)
 	if tx == nil {
-		return [16]byte{}
+		return ""
 	}
-	return tx.TraceID
+	return tx.ToSentryTrace()
 }
 
 func StartSpan(ctx context.Context, name string, data map[string]any) *sentry.Span {

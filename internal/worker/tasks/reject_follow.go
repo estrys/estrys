@@ -33,7 +33,7 @@ func NewRejectFollowTask(ctx context.Context, username string, act vocab.Activit
 		return nil, err //nolint:wrapcheck
 	}
 	payload, err := json.Marshal(RejectFollowInput{
-		TraceID:  observability.GetTraceIDFromContext(ctx).String(),
+		TraceID:  observability.GetTraceIDFromContext(ctx),
 		Username: username,
 		Activity: serializedActivity,
 	})

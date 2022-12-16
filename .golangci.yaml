@@ -33,6 +33,7 @@ linters:
     - funlen
     - dupl
     - ireturn #Buggy
+    - contextcheck # Buggy when using context from sentry transactions
     # Disable not really relevant or aggressive ones
     - wrapcheck
     - godox
