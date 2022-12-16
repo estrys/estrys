@@ -24,7 +24,6 @@ import (
 
 type SendTweetInput struct {
 	TraceID string              `json:"trace_id"`
-	Bagage  string              `json:"bagage"`
 	From    string              `json:"from"`
 	To      string              `json:"to"`
 	Tweet   twittermodels.Tweet `json:"tweet"`
