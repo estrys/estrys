@@ -595,6 +595,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 				fakeWorker := mocks.NewBackgroundWorkerClient(t)
 				fakeWorker.On("Enqueue", mock.MatchedBy(func(task *asynq.Task) bool {
 					expectedAccept := tasks.RejectFollowInput{
+						TraceID:  "00000000000000000000000000000000",
 						Username: "validuser",
 						Activity: map[string]interface{}{
 							"@context": "https://www.w3.org/ns/activitystreams",
@@ -649,6 +650,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox_Follow() {
 				fakeWorker := mocks.NewBackgroundWorkerClient(t)
 				fakeWorker.On("Enqueue", mock.MatchedBy(func(task *asynq.Task) bool {
 					expectedAccept := tasks.AcceptFollowInput{
+						TraceID:  "00000000000000000000000000000000",
 						Username: "validuser",
 						Activity: map[string]interface{}{
 							"@context": "https://www.w3.org/ns/activitystreams",

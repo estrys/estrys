@@ -7,6 +7,8 @@ import (
 	"github.com/go-redis/redis/v9"
 	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack/v5"
+
+	"github.com/estrys/estrys/internal/observability"
 )
 
 type redisCache[T any] struct {
@@ -38,14 +40,17 @@ func (r redisCache[T]) Set(ctx context.Context, key string, value T, opts ...Opt
 			timeout = time.Duration(t)
 		}
 	}
-
+	span := observability.StartSpan(ctx, "redis_set", map[string]any{"key": key})
 	r.client.Set(ctx, key, serializedValue, timeout)
+	observability.FinishSpan(span)
 	return nil
 }
 
 func (r redisCache[T]) Get(ctx context.Context, key string) (*T, error) {
+	span := observability.StartSpan(ctx, "redis_get", map[string]any{"key": key})
 	var result T
 	item, err := r.client.Get(ctx, key).Result()
+	observability.FinishSpan(span)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, ErrMiss

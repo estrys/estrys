@@ -35,9 +35,9 @@ func StartBroker(ctx context.Context) error {
 
 	mux := asynq.NewServeMux()
 
-	mux.HandleFunc(tasks.TypeAcceptFollow, tasks.HandleAcceptFollow)
-	mux.HandleFunc(tasks.TypeRejectFollow, tasks.HandleRejectFollow)
-	mux.HandleFunc(tasks.TypeSendTweet, tasks.HandleSendTweet)
+	mux.HandleFunc(tasks.TypeAcceptFollow, TracingHandler(tasks.HandleAcceptFollow))
+	mux.HandleFunc(tasks.TypeRejectFollow, TracingHandler(tasks.HandleRejectFollow))
+	mux.HandleFunc(tasks.TypeSendTweet, TracingHandler(tasks.HandleSendTweet))
 
 	log.Info("Starting worker")
 

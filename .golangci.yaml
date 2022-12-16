@@ -6,6 +6,10 @@ run:
     - internal/models
 
 linters-settings:
+  tagliatelle:
+    case:
+      rules:
+        json: snake
   goimports:
     local-prefixes: github.com/estrys/estrys
   gci:

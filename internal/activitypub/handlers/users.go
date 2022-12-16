@@ -179,6 +179,7 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 				WithUserMessage("not allowed to follow this user")
 		case errors.Is(err, streams.ErrNoCallbackMatch):
 			return internalerrors.Wrap(err, http.StatusBadRequest).
+				SkipCapture().
 				WithUserMessage("unsupported activity")
 		case errors.Is(err, domain.ErrFollowMismatchDomain):
 			return internalerrors.Wrap(err, http.StatusBadRequest).

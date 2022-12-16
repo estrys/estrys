@@ -16,21 +16,27 @@ import (
 	activitypubclient "github.com/estrys/estrys/internal/activitypub/client"
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/repository"
 	"github.com/estrys/estrys/internal/worker/queues"
 )
 
 type RejectFollowInput struct {
+	TraceID  string `json:"trace_id,omitempty"`
 	Username string `json:"user"`
 	Activity map[string]interface{}
 }
 
-func NewRejectFollowTask(username string, act vocab.ActivityStreamsFollow) (*asynq.Task, error) {
+func NewRejectFollowTask(ctx context.Context, username string, act vocab.ActivityStreamsFollow) (*asynq.Task, error) {
 	serializedActivity, err := streams.Serialize(act)
 	if err != nil {
 		return nil, err //nolint:wrapcheck
 	}
-	payload, err := json.Marshal(RejectFollowInput{Username: username, Activity: serializedActivity})
+	payload, err := json.Marshal(RejectFollowInput{
+		TraceID:  observability.GetTraceIDFromContext(ctx).String(),
+		Username: username,
+		Activity: serializedActivity,
+	})
 	if err != nil {
 		return nil, err //nolint:wrapcheck
 	}

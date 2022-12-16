@@ -13,6 +13,7 @@ import (
 
 	"github.com/estrys/estrys/internal/cache"
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/observability"
 )
 
 type Authorizer struct {
@@ -112,6 +113,7 @@ func (c *twitterClient) GetUser(ctx context.Context, username string) (*User, er
 	}
 	c.log.WithField("key", cacheKey).Trace("twitter user cache miss")
 
+	span := observability.StartSpan(ctx, "twitter_get_user", map[string]interface{}{"username": username})
 	lookup, err := c.twitter.UserNameLookup(ctx, []string{username}, twitter.UserLookupOpts{
 		UserFields: []twitter.UserField{
 			twitter.UserFieldDescription,
@@ -121,6 +123,7 @@ func (c *twitterClient) GetUser(ctx context.Context, username string) (*User, er
 			twitter.UserFieldPublicMetrics,
 		},
 	})
+	observability.FinishSpan(span)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to fetch twitter user")
 	}

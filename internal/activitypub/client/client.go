@@ -20,6 +20,7 @@ import (
 
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/models"
+	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/router/routes"
 	"github.com/estrys/estrys/internal/router/urlgenerator"
 )
@@ -147,7 +148,9 @@ func (c *activityPubClient) PostInbox(
 	request.Header.Add("host", actorURL.Host)
 	request.Header.Add("content-type", "application/activity+json")
 
+	span := observability.StartSpan(ctx, "activity_post_inbox", map[string]any{"url": actorURL.String()})
 	response, err := c.client.Do(request)
+	observability.FinishSpan(span)
 	if err != nil {
 		return errors.Wrap(err, "unable to perform post to inbox request")
 	}

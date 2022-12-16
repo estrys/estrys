@@ -32,9 +32,9 @@ type rsaKeyManager struct {
 
 type keyResponse struct {
 	PublicKey struct {
-		PublicKeyPEM string `json:"publicKeyPem"`
+		PublicKeyPEM string `json:"publicKeyPem"` //nolint:tagliatelle
 		Owner        string `json:"owner"`
-	} `json:"publicKey"`
+	} `json:"publicKey"` //nolint:tagliatelle
 }
 
 func NewKeyManager(log logger.Logger, client _http.Client) *rsaKeyManager {
