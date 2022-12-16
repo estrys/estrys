@@ -222,9 +222,9 @@ func (a *inboxService) UnFollow(ctx context.Context, act vocab.ActivityStreamsUn
 		return err
 	}
 
-	actor, err := a.actorRepo.Get(ctx, actorURL)
+	actor, err := a.createActorIfNoExist(ctx, actorURL)
 	if err != nil {
-		return errors.Wrap(err, "unable to fetch actor")
+		return errors.Wrap(err, "unable to create actor")
 	}
 
 	err = a.userRepo.UnFollow(ctx, user, actor)
