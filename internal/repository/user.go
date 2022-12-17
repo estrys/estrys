@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -45,7 +46,7 @@ func NewUserRepository(database database.Database) *userRepo {
 func (u *userRepo) CreateUser(ctx context.Context, input CreateUserRequest) (*models.User, error) {
 	privKey := x509.MarshalPKCS1PrivateKey(input.PrivateKey)
 	user := &models.User{
-		Username:   input.Username,
+		Username:   strings.ToLower(input.Username),
 		ID:         input.ID,
 		PrivateKey: privKey,
 		CreatedAt:  input.CreatedAt,
@@ -75,6 +76,7 @@ func (u *userRepo) UnFollow(ctx context.Context, user *models.User, actor *model
 }
 
 func (u *userRepo) Get(ctx context.Context, usernameOrID string) (*models.User, error) {
+	usernameOrID = strings.ToLower(usernameOrID)
 	var err error
 	var user *models.User
 	if _, err = strconv.ParseInt(usernameOrID, 10, 64); err == nil {
