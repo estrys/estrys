@@ -11,7 +11,7 @@ import (
 
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/logger"
-	"github.com/estrys/estrys/internal/observability"
+	observabilityhandler "github.com/estrys/estrys/internal/observability/handlers"
 )
 
 type Config struct {
@@ -22,8 +22,9 @@ func StartServer(ctx context.Context, cfg Config) error {
 	muxRouter := dic.GetService[*mux.Router]()
 	log := dic.GetService[logger.Logger]()
 
-	handler := observability.HandleFunc(
+	handler := observabilityhandler.ObservabilityHandler(
 		muxRouter,
+		log,
 		func(responseWriter http.ResponseWriter, request *http.Request) {
 			vars := mux.Vars(request)
 			fields := logrus.Fields{}

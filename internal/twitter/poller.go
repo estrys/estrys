@@ -2,6 +2,7 @@ package twitter
 
 import (
 	"context"
+	"runtime/debug"
 	"time"
 
 	"github.com/g8rswimmer/go-twitter/v2"
@@ -68,7 +69,12 @@ func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 	return nil
 }
 
-func (c *twitterPoller) FetchTweets(ctx context.Context) error {
+func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = errors.Errorf("got a panic during poller: " + string(debug.Stack()))
+		}
+	}()
 	tx := observability.StartTransaction(ctx, "poll_tweets")
 	ctx = tx.Context()
 	if len(c.users) == c.userIndex {
@@ -109,33 +115,11 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 	userLogger.WithField("count", tweets.Meta.ResultCount).Trace("fetched tweets")
 	if tweets.Meta.ResultCount > 0 {
 		for _, tweet := range tweets.Raw.Tweets {
-			createdAt, err := time.Parse(time.RFC3339, tweet.CreatedAt)
+			err := c.handleTweet(ctx, user, tweet)
 			if err != nil {
-				c.log.WithError(err).Error("unable to decode tweet date")
-				continue
+				c.log.WithError(err).Error()
 			}
-			actors, err := c.repo.GetFollowers(ctx, user)
-			if err != nil {
-				c.log.WithField("user", user.Username).WithError(err).Error("unable to retrieve followers for user")
-				continue
-			}
-			for _, actor := range actors {
-				sendTweetTask, err := tasks.NewSendTweet(ctx, user, actor, twittermodels.Tweet{
-					ID:        tweet.ID,
-					Text:      tweet.Text,
-					Published: createdAt,
-					Sensitive: tweet.PossiblySensitive,
-				})
-				if err != nil {
-					c.log.WithError(err).Error("unable to create send tweet task")
-					continue
-				}
-				_, err = c.worker.Enqueue(sendTweetTask)
-				if err != nil {
-					c.log.WithField("user", user.Username).WithError(err).Error("unable to schedule send tweet task")
-				}
-				c.log.WithField("tweet", tweet.ID).Info("scheduled new tweet send")
-			}
+			c.log.WithField("tweet", tweet.ID).Info("scheduled new tweet send")
 		}
 		c.userCursors[c.users[c.userIndex].Username] = tweets.Meta.NewestID
 	}
@@ -145,6 +129,37 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) error {
 	}
 	tx.Finish()
 	c.userIndex++
+	return nil
+}
+
+func (c *twitterPoller) handleTweet(
+	ctx context.Context,
+	user *models.User,
+	tweet *twitter.TweetObj,
+) error {
+	createdAt, err := time.Parse(time.RFC3339, tweet.CreatedAt)
+	if err != nil {
+		return errors.Wrap(err, "unable to decode tweet date")
+	}
+	actors, err := c.repo.GetFollowers(ctx, user)
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve followers for user")
+	}
+	for _, actor := range actors {
+		sendTweetTask, err := tasks.NewSendTweet(ctx, user, actor, twittermodels.Tweet{
+			ID:        tweet.ID,
+			Text:      tweet.Text,
+			Published: createdAt,
+			Sensitive: tweet.PossiblySensitive,
+		})
+		if err != nil {
+			return errors.Wrap(err, "unable to create send tweet task")
+		}
+		_, err = c.worker.Enqueue(sendTweetTask)
+		if err != nil {
+			return errors.Wrap(err, "unable to schedule send tweet task")
+		}
+	}
 	return nil
 }
 

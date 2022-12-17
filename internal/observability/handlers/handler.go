@@ -1,4 +1,4 @@
-package observability
+package handlers
 
 import (
 	"fmt"
@@ -6,11 +6,24 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
+
+	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/observability"
 )
 
-func HandleFunc(router *mux.Router, handler http.HandlerFunc) http.HandlerFunc {
+func ObservabilityHandler(router *mux.Router, logger logger.Logger, handler http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
+		defer func() {
+			if err := recover(); err != nil {
+				writer.WriteHeader(http.StatusInternalServerError)
+				hub := sentry.GetHubFromContext(ctx)
+				if hub != nil {
+					hub.RecoverWithContext(ctx, err)
+				}
+				logger.Error(err)
+			}
+		}()
 		hub := sentry.GetHubFromContext(ctx)
 		if hub == nil {
 			hub = sentry.CurrentHub().Clone()
@@ -31,10 +44,10 @@ func HandleFunc(router *mux.Router, handler http.HandlerFunc) http.HandlerFunc {
 				data[k] = v
 			}
 		}
-		tx := StartTransaction(ctx, transactionName, options...)
+		tx := observability.StartTransaction(ctx, transactionName, options...)
 		tx.Data = data
 
-		defer FinishSpan(tx)
+		defer observability.FinishSpan(tx)
 		request = request.WithContext(tx.Context()) //nolint:contextcheck
 		hub.Scope().SetRequest(request)
 		handler(writer, request)
