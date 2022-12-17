@@ -5,7 +5,6 @@ package mocks
 import (
 	context "context"
 
-	internaltwitter "github.com/estrys/estrys/internal/twitter"
 	mock "github.com/stretchr/testify/mock"
 
 	twitter "github.com/g8rswimmer/go-twitter/v2"
@@ -25,20 +24,20 @@ func (_m *TwitterClient) EXPECT() *TwitterClient_Expecter {
 }
 
 // GetTweets provides a mock function with given fields: _a0, _a1, _a2
-func (_m *TwitterClient) GetTweets(_a0 context.Context, _a1 string, _a2 twitter.UserTweetTimelineOpts) (*twitter.UserTweetTimelineResponse, error) {
+func (_m *TwitterClient) GetTweets(_a0 context.Context, _a1 []string, _a2 twitter.TweetLookupOpts) (*twitter.TweetLookupResponse, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
-	var r0 *twitter.UserTweetTimelineResponse
-	if rf, ok := ret.Get(0).(func(context.Context, string, twitter.UserTweetTimelineOpts) *twitter.UserTweetTimelineResponse); ok {
+	var r0 *twitter.TweetLookupResponse
+	if rf, ok := ret.Get(0).(func(context.Context, []string, twitter.TweetLookupOpts) *twitter.TweetLookupResponse); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*twitter.UserTweetTimelineResponse)
+			r0 = ret.Get(0).(*twitter.TweetLookupResponse)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, twitter.UserTweetTimelineOpts) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, []string, twitter.TweetLookupOpts) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -54,34 +53,34 @@ type TwitterClient_GetTweets_Call struct {
 
 // GetTweets is a helper method to define mock.On call
 //   - _a0 context.Context
-//   - _a1 string
-//   - _a2 twitter.UserTweetTimelineOpts
+//   - _a1 []string
+//   - _a2 twitter.TweetLookupOpts
 func (_e *TwitterClient_Expecter) GetTweets(_a0 interface{}, _a1 interface{}, _a2 interface{}) *TwitterClient_GetTweets_Call {
 	return &TwitterClient_GetTweets_Call{Call: _e.mock.On("GetTweets", _a0, _a1, _a2)}
 }
 
-func (_c *TwitterClient_GetTweets_Call) Run(run func(_a0 context.Context, _a1 string, _a2 twitter.UserTweetTimelineOpts)) *TwitterClient_GetTweets_Call {
+func (_c *TwitterClient_GetTweets_Call) Run(run func(_a0 context.Context, _a1 []string, _a2 twitter.TweetLookupOpts)) *TwitterClient_GetTweets_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string), args[2].(twitter.UserTweetTimelineOpts))
+		run(args[0].(context.Context), args[1].([]string), args[2].(twitter.TweetLookupOpts))
 	})
 	return _c
 }
 
-func (_c *TwitterClient_GetTweets_Call) Return(_a0 *twitter.UserTweetTimelineResponse, _a1 error) *TwitterClient_GetTweets_Call {
+func (_c *TwitterClient_GetTweets_Call) Return(_a0 *twitter.TweetLookupResponse, _a1 error) *TwitterClient_GetTweets_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
 // GetUser provides a mock function with given fields: ctx, username
-func (_m *TwitterClient) GetUser(ctx context.Context, username string) (*internaltwitter.User, error) {
+func (_m *TwitterClient) GetUser(ctx context.Context, username string) (*twitter.UserObj, error) {
 	ret := _m.Called(ctx, username)
 
-	var r0 *internaltwitter.User
-	if rf, ok := ret.Get(0).(func(context.Context, string) *internaltwitter.User); ok {
+	var r0 *twitter.UserObj
+	if rf, ok := ret.Get(0).(func(context.Context, string) *twitter.UserObj); ok {
 		r0 = rf(ctx, username)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*internaltwitter.User)
+			r0 = ret.Get(0).(*twitter.UserObj)
 		}
 	}
 
@@ -114,7 +113,102 @@ func (_c *TwitterClient_GetUser_Call) Run(run func(ctx context.Context, username
 	return _c
 }
 
-func (_c *TwitterClient_GetUser_Call) Return(_a0 *internaltwitter.User, _a1 error) *TwitterClient_GetUser_Call {
+func (_c *TwitterClient_GetUser_Call) Return(_a0 *twitter.UserObj, _a1 error) *TwitterClient_GetUser_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+// GetUserByIDs provides a mock function with given fields: _a0, _a1
+func (_m *TwitterClient) GetUserByIDs(_a0 context.Context, _a1 []string) ([]*twitter.UserObj, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 []*twitter.UserObj
+	if rf, ok := ret.Get(0).(func(context.Context, []string) []*twitter.UserObj); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*twitter.UserObj)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TwitterClient_GetUserByIDs_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserByIDs'
+type TwitterClient_GetUserByIDs_Call struct {
+	*mock.Call
+}
+
+// GetUserByIDs is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 []string
+func (_e *TwitterClient_Expecter) GetUserByIDs(_a0 interface{}, _a1 interface{}) *TwitterClient_GetUserByIDs_Call {
+	return &TwitterClient_GetUserByIDs_Call{Call: _e.mock.On("GetUserByIDs", _a0, _a1)}
+}
+
+func (_c *TwitterClient_GetUserByIDs_Call) Run(run func(_a0 context.Context, _a1 []string)) *TwitterClient_GetUserByIDs_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].([]string))
+	})
+	return _c
+}
+
+func (_c *TwitterClient_GetUserByIDs_Call) Return(_a0 []*twitter.UserObj, _a1 error) *TwitterClient_GetUserByIDs_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+// GetUserTweets provides a mock function with given fields: _a0, _a1, _a2
+func (_m *TwitterClient) GetUserTweets(_a0 context.Context, _a1 string, _a2 twitter.UserTweetTimelineOpts) (*twitter.UserTweetTimelineResponse, error) {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 *twitter.UserTweetTimelineResponse
+	if rf, ok := ret.Get(0).(func(context.Context, string, twitter.UserTweetTimelineOpts) *twitter.UserTweetTimelineResponse); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*twitter.UserTweetTimelineResponse)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, twitter.UserTweetTimelineOpts) error); ok {
+		r1 = rf(_a0, _a1, _a2)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// TwitterClient_GetUserTweets_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetUserTweets'
+type TwitterClient_GetUserTweets_Call struct {
+	*mock.Call
+}
+
+// GetUserTweets is a helper method to define mock.On call
+//   - _a0 context.Context
+//   - _a1 string
+//   - _a2 twitter.UserTweetTimelineOpts
+func (_e *TwitterClient_Expecter) GetUserTweets(_a0 interface{}, _a1 interface{}, _a2 interface{}) *TwitterClient_GetUserTweets_Call {
+	return &TwitterClient_GetUserTweets_Call{Call: _e.mock.On("GetUserTweets", _a0, _a1, _a2)}
+}
+
+func (_c *TwitterClient_GetUserTweets_Call) Run(run func(_a0 context.Context, _a1 string, _a2 twitter.UserTweetTimelineOpts)) *TwitterClient_GetUserTweets_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(string), args[2].(twitter.UserTweetTimelineOpts))
+	})
+	return _c
+}
+
+func (_c *TwitterClient_GetUserTweets_Call) Return(_a0 *twitter.UserTweetTimelineResponse, _a1 error) *TwitterClient_GetUserTweets_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }

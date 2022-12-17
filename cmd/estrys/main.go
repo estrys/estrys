@@ -16,7 +16,7 @@ import (
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/domain"
 	"github.com/estrys/estrys/internal/logger"
-	"github.com/estrys/estrys/internal/twitter"
+	"github.com/estrys/estrys/internal/twitter/poller"
 	"github.com/estrys/estrys/internal/worker"
 	"github.com/estrys/estrys/migrations"
 )
@@ -62,7 +62,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	twp := dic.GetService[twitter.TwitterPoller]()
+	twp := dic.GetService[poller.TwitterPoller]()
 	go func() {
 		err := twp.Start(appContext)
 		if err != nil {

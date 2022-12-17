@@ -25,6 +25,7 @@ import (
 	"github.com/estrys/estrys/internal/router/urlgenerator"
 	"github.com/estrys/estrys/internal/twitter"
 	"github.com/estrys/estrys/internal/twitter/models"
+	"github.com/estrys/estrys/internal/twitter/poller"
 	twitterrepository "github.com/estrys/estrys/internal/twitter/repository"
 	"github.com/estrys/estrys/internal/worker/client"
 )
@@ -53,7 +54,7 @@ func BuildContainer() error {
 	))
 	redisClient := cache.NewRedisClient(&redis.Options{Addr: conf.RedisAddress})
 	_ = dic.Register[cache.RedisClient](*redisClient)
-	_ = dic.Register[cache.Cache[twitter.User]](cache.CreateRedisCache[twitter.User](
+	_ = dic.Register[cache.Cache[gotwitter.UserObj]](cache.CreateRedisCache[gotwitter.UserObj](
 		redisClient,
 		cache.OptionDefaultTTL(conf.TwitterUserCacheTimeout),
 	))
@@ -79,7 +80,7 @@ func BuildContainer() error {
 	})
 	_ = dic.Register[twitter.TwitterClient](twitter.NewClient(
 		dic.GetService[logger.Logger](),
-		dic.GetService[cache.Cache[twitter.User]](),
+		dic.GetService[cache.Cache[gotwitter.UserObj]](),
 		dic.GetService[twitter.Backend](),
 	))
 	_ = dic.Register[twitterrepository.TweetRepository](
@@ -128,11 +129,17 @@ func BuildContainer() error {
 		dic.GetService[authorization.AuthorizationChecker](),
 		conf,
 	))
+	_ = dic.Register[domain.TweetService](domain.NewTweetService(
+		dic.GetService[domain.UserService](),
+		dic.GetService[twitter.TwitterClient](),
+		dic.GetService[twitterrepository.TweetRepository](),
+	))
 
-	_ = dic.Register[twitter.TwitterPoller](twitter.NewPoller(
+	_ = dic.Register[poller.TwitterPoller](poller.NewPoller(
 		dic.GetService[logger.Logger](),
 		dic.GetService[twitter.TwitterClient](),
 		dic.GetService[repository.UserRepository](),
+		dic.GetService[domain.TweetService](),
 		dic.GetService[client.BackgroundWorkerClient](),
 	))
 

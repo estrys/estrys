@@ -1,4 +1,4 @@
-package twitter_test
+package poller_test
 
 import (
 	"context"
@@ -13,24 +13,28 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	mocksdomain "github.com/estrys/estrys/internal/domain/mocks"
 	"github.com/estrys/estrys/internal/logger/mocks"
 	"github.com/estrys/estrys/internal/models"
 	mocksuser "github.com/estrys/estrys/internal/repository/mocks"
-	"github.com/estrys/estrys/internal/twitter"
 	mockstwitter "github.com/estrys/estrys/internal/twitter/mocks"
+	twittermodels "github.com/estrys/estrys/internal/twitter/models"
+	"github.com/estrys/estrys/internal/twitter/poller"
 	mocksworker "github.com/estrys/estrys/internal/worker/client/mocks"
 	"github.com/estrys/estrys/internal/worker/tasks"
 )
 
 func Test_twitterPoller_Start(t *testing.T) {
+	fakeDateStr := "2006-01-02T15:04:05Z"
+	fakeDate, _ := time.Parse(time.RFC3339, fakeDateStr)
 	cases := []struct {
 		name      string
 		assertErr func(*testing.T, error)
-		mocks     func(*mockstwitter.TwitterClient, *mocksuser.UserRepository, context.CancelFunc, *mocksworker.BackgroundWorkerClient)
+		mocks     func(*mockstwitter.TwitterClient, *mocksuser.UserRepository, *mocksdomain.TweetService, context.CancelFunc, *mocksworker.BackgroundWorkerClient)
 	}{
 		{
 			name: "error while fetching users for the first time",
-			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, _ context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
+			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, _ *mocksdomain.TweetService, _ context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
 				fakeRepo.On("GetWithFollowers", mock.Anything).
 					Return(
 						nil,
@@ -43,7 +47,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 		},
 		{
 			name: "error while fetching users while polling for new users",
-			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, _ context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
+			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, _ *mocksdomain.TweetService, _ context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
 				fakeRepo.On("GetWithFollowers", mock.Anything).
 					Once().
 					Return(
@@ -63,7 +67,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 		},
 		{
 			name: "error while fetching users while polling for new users",
-			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
+			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, tweetService *mocksdomain.TweetService, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
 				fakeRepo.On("GetWithFollowers", mock.Anything).
 					Once().
 					Return(
@@ -76,7 +80,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						nil,
 					)
 				fakeTwitter.On(
-					"GetTweets",
+					"GetUserTweets",
 					mock.Anything,
 					"123",
 					mock.MatchedBy(func(opts gotwitter.UserTweetTimelineOpts) bool { return !opts.StartTime.IsZero() }),
@@ -91,7 +95,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 		},
 		{
 			name: "Polling user timeline",
-			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, cancel context.CancelFunc, worker *mocksworker.BackgroundWorkerClient) {
+			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, tweetService *mocksdomain.TweetService, cancel context.CancelFunc, worker *mocksworker.BackgroundWorkerClient) {
 				fakeRepo.On("GetWithFollowers", mock.Anything).
 					Return(
 						models.UserSlice{
@@ -103,7 +107,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						nil,
 					)
 				var startTime time.Time
-				fakeTwitter.On("GetTweets", mock.Anything, "123", mock.Anything).
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", mock.Anything).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{
@@ -116,7 +120,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 					arg := args.Get(2).(gotwitter.UserTweetTimelineOpts)
 					startTime = arg.StartTime
 				})
-				fakeTwitter.On("GetTweets", mock.Anything, "123", mock.MatchedBy(func(opts gotwitter.UserTweetTimelineOpts) bool {
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", mock.MatchedBy(func(opts gotwitter.UserTweetTimelineOpts) bool {
 					return opts.StartTime == startTime
 				})).
 					Once().
@@ -139,6 +143,18 @@ func Test_twitterPoller_Start(t *testing.T) {
 						},
 						nil,
 					)
+
+				tweetService.EXPECT().SaveTweetAndReferences(mock.Anything, &gotwitter.TweetObj{
+					ID:                "1337",
+					Text:              "tweet content",
+					CreatedAt:         fakeDateStr,
+					PossiblySensitive: true,
+				}).Return(&twittermodels.Tweet{
+					ID:        "1337",
+					Text:      "tweet content",
+					Published: fakeDate,
+					Sensitive: true,
+				}, nil)
 
 				fakeRepo.On("GetFollowers", mock.Anything, &models.User{
 					ID:       "123",
@@ -193,7 +209,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 					return match
 				})).Return(nil, nil)
 
-				fakeTwitter.On("GetTweets", mock.Anything, "123", gotwitter.UserTweetTimelineOpts{
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", gotwitter.UserTweetTimelineOpts{
 					MaxResults: 100,
 					Excludes: []gotwitter.Exclude{
 						gotwitter.ExcludeReplies,
@@ -203,6 +219,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						gotwitter.TweetFieldText,
 						gotwitter.TweetFieldCreatedAt,
 						gotwitter.TweetFieldPossiblySensitve,
+						gotwitter.TweetFieldReferencedTweets,
 					},
 					SinceID: "1",
 				}).
@@ -224,8 +241,8 @@ func Test_twitterPoller_Start(t *testing.T) {
 			},
 		},
 		{
-			name: "failed GetTweets during Polling user timeline",
-			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
+			name: "failed GetUserTweets during Polling user timeline",
+			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, _ *mocksdomain.TweetService, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
 				fakeRepo.On("GetWithFollowers", mock.Anything).
 					Once().
 					Return(
@@ -248,7 +265,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						},
 						nil,
 					)
-				fakeTwitter.On("GetTweets", mock.Anything, "123", mock.Anything).
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", mock.Anything).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{
@@ -260,7 +277,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						},
 						nil,
 					)
-				fakeTwitter.On("GetTweets", mock.Anything, mock.Anything, mock.Anything).
+				fakeTwitter.On("GetUserTweets", mock.Anything, mock.Anything, mock.Anything).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{},
@@ -275,8 +292,8 @@ func Test_twitterPoller_Start(t *testing.T) {
 			},
 		},
 		{
-			name: "Keep polling on the same user as we get errors on GetTweets",
-			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
+			name: "Keep polling on the same user as we get errors on GetUserTweets",
+			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, _ *mocksdomain.TweetService, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
 				fakeRepo.On("GetWithFollowers", mock.Anything).
 					Once().
 					Return(
@@ -288,7 +305,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						},
 						nil,
 					)
-				fakeTwitter.On("GetTweets", mock.Anything, "123", mock.Anything).
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", mock.Anything).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{
@@ -315,13 +332,13 @@ func Test_twitterPoller_Start(t *testing.T) {
 						},
 						nil,
 					)
-				fakeTwitter.On("GetTweets", mock.Anything, "123", mock.Anything).
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", mock.Anything).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{},
 						errors.New("unexpected error"),
 					)
-				fakeTwitter.On("GetTweets", mock.Anything, "123", mock.Anything).
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", mock.Anything).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{},
@@ -337,7 +354,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 		},
 		{
 			name: "Polling multiple users",
-			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
+			mocks: func(fakeTwitter *mockstwitter.TwitterClient, fakeRepo *mocksuser.UserRepository, _ *mocksdomain.TweetService, cancel context.CancelFunc, _ *mocksworker.BackgroundWorkerClient) {
 				fakeRepo.On("GetWithFollowers", mock.Anything).
 					Once().
 					Return(
@@ -349,7 +366,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						},
 						nil,
 					)
-				fakeTwitter.On("GetTweets", mock.Anything, "123", mock.Anything).
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", mock.Anything).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{
@@ -376,7 +393,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						},
 						nil,
 					)
-				fakeTwitter.On("GetTweets", mock.Anything, "123", gotwitter.UserTweetTimelineOpts{
+				fakeTwitter.On("GetUserTweets", mock.Anything, "123", gotwitter.UserTweetTimelineOpts{
 					MaxResults: 100,
 					Excludes: []gotwitter.Exclude{
 						gotwitter.ExcludeReplies,
@@ -386,6 +403,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						gotwitter.TweetFieldText,
 						gotwitter.TweetFieldCreatedAt,
 						gotwitter.TweetFieldPossiblySensitve,
+						gotwitter.TweetFieldReferencedTweets,
 					},
 					SinceID: "1",
 				}).
@@ -395,7 +413,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 						nil,
 					)
 
-				fakeTwitter.On("GetTweets", mock.Anything, "124", mock.MatchedBy(func(opts gotwitter.UserTweetTimelineOpts) bool { return !opts.StartTime.IsZero() })).
+				fakeTwitter.On("GetUserTweets", mock.Anything, "124", mock.MatchedBy(func(opts gotwitter.UserTweetTimelineOpts) bool { return !opts.StartTime.IsZero() })).
 					Once().
 					Return(
 						&gotwitter.UserTweetTimelineResponse{Meta: &gotwitter.UserTimelineMeta{ResultCount: 0}},
@@ -416,12 +434,14 @@ func Test_twitterPoller_Start(t *testing.T) {
 			fakeContext, cancel := context.WithCancel(context.Background())
 			fakeTwitterClient := mockstwitter.NewTwitterClient(t)
 			fakeUserRepo := mocksuser.NewUserRepository(t)
+			fakeTweetService := mocksdomain.NewTweetService(t)
 			fakeWorker := mocksworker.NewBackgroundWorkerClient(t)
-			c.mocks(fakeTwitterClient, fakeUserRepo, cancel, fakeWorker)
-			poller := twitter.NewPoller(
+			c.mocks(fakeTwitterClient, fakeUserRepo, fakeTweetService, cancel, fakeWorker)
+			poller := poller.NewPoller(
 				mocks.NewNullLogger(),
 				fakeTwitterClient,
 				fakeUserRepo,
+				fakeTweetService,
 				fakeWorker,
 			)
 			err := poller.Start(fakeContext)

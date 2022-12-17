@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/estrys/estrys/internal/cache"
 	"github.com/estrys/estrys/internal/twitter/models"
 )
@@ -30,7 +32,7 @@ func (r *redisTweetRepository) getTweetCacheKey(id string) string {
 
 func (r *redisTweetRepository) GetTweet(ctx context.Context, tweetID string) (*models.Tweet, error) {
 	tweet, err := r.cache.Get(ctx, r.getTweetCacheKey(tweetID))
-	if err != nil {
+	if err != nil && !errors.Is(err, cache.ErrMiss) {
 		return nil, err
 	}
 	return tweet, nil
