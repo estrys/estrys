@@ -81,7 +81,7 @@ func (t *tweetService) saveReferencedTweets(
 		return nil, err
 	}
 	if len(resp.Raw.Errors) != 0 {
-		return nil, errors.New("unable to fetch twitter user")
+		return nil, errors.New("unable to fetch tweets")
 	}
 
 	// We store user ids from referenced tweets to see if we also need to fetch their

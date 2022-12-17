@@ -164,7 +164,7 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 						},
 					}, nil)
 			},
-			err: "unable to fetch referenced tweets: unable to fetch twitter user",
+			err: "unable to fetch referenced tweets: unable to fetch tweets",
 		},
 		{
 			name:       "invalid date in returned referenced tweet",
