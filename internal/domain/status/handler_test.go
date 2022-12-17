@@ -26,7 +26,7 @@ type StatusHandlerTestSuite struct {
 	tests.HTTPTestSuite
 }
 
-func TestUserHandlerTestSuite(t *testing.T) {
+func TestStatusHandlerTestSuite(t *testing.T) {
 	suite.Run(t, new(StatusHandlerTestSuite))
 }
 

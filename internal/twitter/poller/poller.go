@@ -1,19 +1,20 @@
-package twitter
+package poller
 
 import (
 	"context"
 	"runtime/debug"
 	"time"
 
-	"github.com/g8rswimmer/go-twitter/v2"
+	gotwitter "github.com/g8rswimmer/go-twitter/v2"
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
 
+	"github.com/estrys/estrys/internal/domain"
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/repository"
-	twittermodels "github.com/estrys/estrys/internal/twitter/models"
+	"github.com/estrys/estrys/internal/twitter"
 	"github.com/estrys/estrys/internal/worker/client"
 	"github.com/estrys/estrys/internal/worker/tasks"
 )
@@ -23,14 +24,15 @@ type TwitterPoller interface {
 }
 
 type twitterPoller struct {
-	log         logger.Logger
-	twitter     TwitterClient
-	repo        repository.UserRepository
-	worker      client.BackgroundWorkerClient
-	users       models.UserSlice
-	userCursors map[string]string
-	userIndex   int
-	startTime   time.Time
+	log          logger.Logger
+	twitter      twitter.TwitterClient
+	repo         repository.UserRepository
+	tweetService domain.TweetService
+	worker       client.BackgroundWorkerClient
+	users        models.UserSlice
+	userCursors  map[string]string
+	userIndex    int
+	startTime    time.Time
 }
 
 var (
@@ -44,16 +46,18 @@ const (
 
 func NewPoller(
 	log logger.Logger,
-	client TwitterClient,
+	client twitter.TwitterClient,
 	repo repository.UserRepository,
+	tweetService domain.TweetService,
 	worker client.BackgroundWorkerClient,
 ) *twitterPoller {
 	return &twitterPoller{
-		log:         log,
-		twitter:     client,
-		repo:        repo,
-		worker:      worker,
-		userCursors: map[string]string{},
+		log:          log,
+		twitter:      client,
+		repo:         repo,
+		tweetService: tweetService,
+		worker:       worker,
+		userCursors:  map[string]string{},
 	}
 }
 
@@ -90,16 +94,17 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 	}
 	user := c.users[c.userIndex]
 	userLogger := c.log.WithField("user", user.Username)
-	opt := twitter.UserTweetTimelineOpts{
+	opt := gotwitter.UserTweetTimelineOpts{
 		MaxResults: 100,
-		Excludes: []twitter.Exclude{
-			twitter.ExcludeReplies,
+		Excludes: []gotwitter.Exclude{
+			gotwitter.ExcludeReplies,
 		},
-		TweetFields: []twitter.TweetField{
-			twitter.TweetFieldID,
-			twitter.TweetFieldText,
-			twitter.TweetFieldCreatedAt,
-			twitter.TweetFieldPossiblySensitve,
+		TweetFields: []gotwitter.TweetField{
+			gotwitter.TweetFieldID,
+			gotwitter.TweetFieldText,
+			gotwitter.TweetFieldCreatedAt,
+			gotwitter.TweetFieldPossiblySensitve,
+			gotwitter.TweetFieldReferencedTweets,
 		},
 	}
 	if cursor, exist := c.userCursors[c.users[c.userIndex].Username]; exist {
@@ -108,7 +113,7 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 		opt.StartTime = c.startTime
 	}
 	userLogger.WithField("cursor", opt.SinceID).Trace("fetching user tweets")
-	tweets, err := c.twitter.GetTweets(ctx, user.ID, opt)
+	tweets, err := c.twitter.GetUserTweets(ctx, user.ID, opt)
 	if err != nil {
 		return err
 	}
@@ -135,23 +140,18 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 func (c *twitterPoller) handleTweet(
 	ctx context.Context,
 	user *models.User,
-	tweet *twitter.TweetObj,
+	rawTweet *gotwitter.TweetObj,
 ) error {
-	createdAt, err := time.Parse(time.RFC3339, tweet.CreatedAt)
+	tweet, err := c.tweetService.SaveTweetAndReferences(ctx, rawTweet)
 	if err != nil {
-		return errors.Wrap(err, "unable to decode tweet date")
+		return errors.Wrap(err, "unable to save tweets and references")
 	}
 	actors, err := c.repo.GetFollowers(ctx, user)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve followers for user")
 	}
 	for _, actor := range actors {
-		sendTweetTask, err := tasks.NewSendTweet(ctx, user, actor, twittermodels.Tweet{
-			ID:        tweet.ID,
-			Text:      tweet.Text,
-			Published: createdAt,
-			Sensitive: tweet.PossiblySensitive,
-		})
+		sendTweetTask, err := tasks.NewSendTweet(ctx, user, actor, *tweet)
 		if err != nil {
 			return errors.Wrap(err, "unable to create send tweet task")
 		}

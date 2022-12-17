@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"strings"
 	"testing"
 	"time"
 
@@ -67,20 +66,27 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
 				fakeCache.On(
 					"Get",
 					mock.Anything,
-					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
+					"twitter/user/by-username/"+fakeUserName).
 					Times(1).Return(nil, cache.ErrMiss)
 				fakeCache.On(
 					"Set",
 					mock.Anything,
-					strings.Join([]string{"twitter", "user", fakeUserName}, "/"),
+					"twitter/user/by-username/"+fakeUserName,
 					mock.Anything).
 					Times(1).
 					Return(nil)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+				fakeCache.On(
+					"Set",
+					mock.Anything,
+					"twitter/user/by-id/12345",
+					mock.Anything).
+					Times(1).
+					Return(nil)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(
@@ -89,6 +95,7 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 					[]string{fakeUserName},
 					gotwitter.UserLookupOpts{
 						UserFields: []gotwitter.UserField{
+							gotwitter.UserFieldID,
 							gotwitter.UserFieldDescription,
 							gotwitter.UserFieldName,
 							gotwitter.UserFieldProfileImageURL,
@@ -146,13 +153,13 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
 				fakeCache.On(
 					"Get",
 					mock.Anything,
-					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
+					"twitter/user/by-username/"+fakeUserName).
 					Times(1).Return(nil, cache.ErrMiss)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
@@ -165,6 +172,7 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 					[]string{fakeUserName},
 					gotwitter.UserLookupOpts{
 						UserFields: []gotwitter.UserField{
+							gotwitter.UserFieldID,
 							gotwitter.UserFieldDescription,
 							gotwitter.UserFieldName,
 							gotwitter.UserFieldProfileImageURL,
@@ -191,13 +199,13 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
 				fakeCache.On(
 					"Get",
 					mock.Anything,
-					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
+					"twitter/user/by-username/"+fakeUserName).
 					Times(1).Return(nil, cache.ErrMiss)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
@@ -210,6 +218,7 @@ func (suite *UserHandlerTestSuite) TestHandleUser() {
 					[]string{fakeUserName},
 					gotwitter.UserLookupOpts{
 						UserFields: []gotwitter.UserField{
+							gotwitter.UserFieldID,
 							gotwitter.UserFieldDescription,
 							gotwitter.UserFieldName,
 							gotwitter.UserFieldProfileImageURL,
@@ -235,13 +244,15 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
 				fakeCache.On(
-					"Get", mock.Anything, mock.Anything).Return(&twitter.User{
-					ProfileImageURL: fakeUserProfileUrl,
-					Followers:       1337,
+					"Get", mock.Anything, mock.Anything).Return(&gotwitter.UserObj{
+					ProfileImageURL: fakeUserProfileUrl.String(),
+					PublicMetrics: &gotwitter.UserMetricsObj{
+						Followers: 1337,
+					},
 				}, nil)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(
@@ -274,17 +285,17 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
-				fakeCache.On(
-					"Get",
-					mock.Anything,
-					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
-					Times(1).Return(nil, cache.ErrMiss)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
-
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
+
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
+				fakeCache.On(
+					"Get",
+					mock.Anything,
+					"twitter/user/by-username/"+fakeUserName).
+					Times(1).Return(nil, cache.ErrMiss)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(
@@ -293,6 +304,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowers() {
 					[]string{fakeUserName},
 					gotwitter.UserLookupOpts{
 						UserFields: []gotwitter.UserField{
+							gotwitter.UserFieldID,
 							gotwitter.UserFieldDescription,
 							gotwitter.UserFieldName,
 							gotwitter.UserFieldProfileImageURL,
@@ -318,13 +330,15 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
 				fakeCache.On(
-					"Get", mock.Anything, mock.Anything).Return(&twitter.User{
-					ProfileImageURL: fakeUserProfileUrl,
-					Following:       1337,
+					"Get", mock.Anything, mock.Anything).Return(&gotwitter.UserObj{
+					ProfileImageURL: fakeUserProfileUrl.String(),
+					PublicMetrics: &gotwitter.UserMetricsObj{
+						Following: 1337,
+					},
 				}, nil)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(
@@ -357,17 +371,17 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
-				fakeCache.On(
-					"Get",
-					mock.Anything,
-					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
-					Times(1).Return(nil, cache.ErrMiss)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
-
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
 				_ = dic.Register[repository.UserRepository](fakeUserRepo)
+
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
+				fakeCache.On(
+					"Get",
+					mock.Anything,
+					"twitter/user/by-username/"+fakeUserName).
+					Times(1).Return(nil, cache.ErrMiss)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeTwitterBackend := mockstwitter.NewBackend(t)
 				fakeTwitterBackend.On(
@@ -376,6 +390,7 @@ func (suite *UserHandlerTestSuite) TestHandleFollowing() {
 					[]string{fakeUserName},
 					gotwitter.UserLookupOpts{
 						UserFields: []gotwitter.UserField{
+							gotwitter.UserFieldID,
 							gotwitter.UserFieldDescription,
 							gotwitter.UserFieldName,
 							gotwitter.UserFieldProfileImageURL,
@@ -401,13 +416,15 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
 				fakeCache.On(
-					"Get", mock.Anything, mock.Anything).Return(&twitter.User{
-					ProfileImageURL: fakeUserProfileUrl,
-					Tweets:          1337,
+					"Get", mock.Anything, mock.Anything).Return(&gotwitter.UserObj{
+					ProfileImageURL: fakeUserProfileUrl.String(),
+					PublicMetrics: &gotwitter.UserMetricsObj{
+						Tweets: 1337,
+					},
 				}, nil)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(
@@ -440,13 +457,13 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 				tests.RequestParams{Params: map[string]string{"username": fakeUserName}},
 			},
 			Mock: func(t *testing.T) {
-				fakeCache := mockscache.NewCache[twitter.User](t)
+				fakeCache := mockscache.NewCache[gotwitter.UserObj](t)
 				fakeCache.On(
 					"Get",
 					mock.Anything,
-					strings.Join([]string{"twitter", "user", fakeUserName}, "/")).
+					"twitter/user/by-username/"+fakeUserName).
 					Times(1).Return(nil, cache.ErrMiss)
-				_ = dic.Register[cache.Cache[twitter.User]](fakeCache)
+				_ = dic.Register[cache.Cache[gotwitter.UserObj]](fakeCache)
 
 				fakeUserRepo := mocksuser.NewUserRepository(t)
 				fakeUserRepo.On("Get", mock.Anything, fakeUserName).Return(nil, nil)
@@ -459,6 +476,7 @@ func (suite *UserHandlerTestSuite) TestHandleOutbox() {
 					[]string{fakeUserName},
 					gotwitter.UserLookupOpts{
 						UserFields: []gotwitter.UserField{
+							gotwitter.UserFieldID,
 							gotwitter.UserFieldDescription,
 							gotwitter.UserFieldName,
 							gotwitter.UserFieldProfileImageURL,
@@ -491,7 +509,7 @@ func (suite *UserHandlerTestSuite) TestHandleInbox() {
 			Mock: func(t *testing.T) {
 				fakeTwitterClient := mockstwitter.NewTwitterClient(t)
 				fakeTwitterClient.On("GetUser", mock.Anything, fakeUserName).Return(
-					nil, twitter.UsernameNotFoundError{fakeUserName},
+					nil, twitter.UserNotFoundError{fakeUserName},
 				)
 				_ = dic.Register[twitter.TwitterClient](fakeTwitterClient)
 			},

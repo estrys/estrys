@@ -24,7 +24,7 @@ func HandleUser(responseWriter http.ResponseWriter, request *http.Request) error
 	user, err := userService.GetFullUser(request.Context(), vars["username"])
 
 	if err != nil {
-		var twitterUserNotFound twitter.UsernameNotFoundError
+		var twitterUserNotFound twitter.UserNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			return internalerrors.Wrap(err, http.StatusNotFound).
 				WithUserMessage("user not found")
@@ -52,7 +52,7 @@ func HandleFollowing(responseWriter http.ResponseWriter, request *http.Request) 
 	user, err := userService.GetFullUser(request.Context(), vars["username"])
 
 	if err != nil {
-		var twitterUserNotFound twitter.UsernameNotFoundError
+		var twitterUserNotFound twitter.UserNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			return internalerrors.Wrap(err, http.StatusNotFound).
 				WithUserMessage("user not found")
@@ -80,7 +80,7 @@ func HandleFollowers(responseWriter http.ResponseWriter, request *http.Request) 
 	user, err := userService.GetFullUser(request.Context(), vars["username"])
 
 	if err != nil {
-		var twitterUserNotFound twitter.UsernameNotFoundError
+		var twitterUserNotFound twitter.UserNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			return internalerrors.Wrap(err, http.StatusNotFound).
 				WithUserMessage("user not found")
@@ -109,7 +109,7 @@ func HandleOutbox(responseWriter http.ResponseWriter, request *http.Request) err
 	user, err := userService.GetFullUser(request.Context(), vars["username"])
 
 	if err != nil {
-		var twitterUserNotFound twitter.UsernameNotFoundError
+		var twitterUserNotFound twitter.UserNotFoundError
 		if errors.As(err, &twitterUserNotFound) || errors.Is(err, domain.ErrUserDoesNotExist) {
 			return internalerrors.Wrap(err, http.StatusNotFound).
 				WithUserMessage("user not found")
@@ -137,11 +137,14 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 	}
 
 	vars := mux.Vars(request)
+
+	// TODO See if we can move this check later in the code, so we could avoid
+	// hitting the cache for unsupported activities
 	twitterClient := dic.GetService[twitter.TwitterClient]()
 	_, err := twitterClient.GetUser(request.Context(), vars["username"])
 
 	if err != nil {
-		var twitterUserNotFound twitter.UsernameNotFoundError
+		var twitterUserNotFound twitter.UserNotFoundError
 		if errors.As(err, &twitterUserNotFound) {
 			return internalerrors.Wrap(err, http.StatusNotFound).
 				WithUserMessage("user not found")

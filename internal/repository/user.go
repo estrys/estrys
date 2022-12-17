@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"database/sql"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -72,11 +74,22 @@ func (u *userRepo) UnFollow(ctx context.Context, user *models.User, actor *model
 	return nil
 }
 
-func (u *userRepo) Get(ctx context.Context, username string) (*models.User, error) {
-	user, err := models.Users(models.UserWhere.Username.EQ(username)).
-		One(ctx, getExecutor(ctx, u.db.DB()))
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to fetch user from database")
+func (u *userRepo) Get(ctx context.Context, usernameOrID string) (*models.User, error) {
+	var err error
+	var user *models.User
+	if _, err = strconv.ParseInt(usernameOrID, 10, 64); err == nil {
+		user, err = models.Users(models.UserWhere.ID.EQ(usernameOrID)).
+			One(ctx, getExecutor(ctx, u.db.DB()))
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.Wrap(err, "unable to fetch user from database")
+		}
+	}
+	if user == nil {
+		user, err = models.Users(models.UserWhere.Username.EQ(usernameOrID)).
+			One(ctx, getExecutor(ctx, u.db.DB()))
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to fetch user from database")
+		}
 	}
 	return user, nil
 }
