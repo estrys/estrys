@@ -8,6 +8,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
 
+	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/twitter"
 	"github.com/estrys/estrys/internal/twitter/models"
@@ -20,17 +21,20 @@ type TweetService interface {
 }
 
 type tweetService struct {
+	logger        logger.Logger
 	userService   UserService
 	tweeterClient twitter.TwitterClient
 	tweetRepo     repository.TweetRepository
 }
 
 func NewTweetService(
+	logger logger.Logger,
 	userService UserService,
 	tweeterClient twitter.TwitterClient,
 	tweetRepo repository.TweetRepository,
 ) *tweetService {
 	return &tweetService{
+		logger:        logger,
 		userService:   userService,
 		tweeterClient: tweeterClient,
 		tweetRepo:     tweetRepo,
@@ -98,6 +102,7 @@ func (t *tweetService) saveReferencedTweets(
 		}
 		authorIDs = append(authorIDs, rawReferencedTweet.AuthorID)
 		result = append(result, *referencedTweet)
+		t.logger.WithField("id", referencedTweet.ID).Debug("saved referenced tweet")
 	}
 
 	err = t.userService.BatchCreateUsersFromIDs(ctx, authorIDs)
@@ -150,5 +155,6 @@ func (t *tweetService) SaveTweetAndReferences(
 	if span != nil {
 		span.Status = sentry.SpanStatusOK
 	}
+	t.logger.WithField("id", tweet.ID).Debug("saved tweet")
 	return tweet, nil
 }

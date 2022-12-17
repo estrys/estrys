@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/estrys/estrys/internal/domain/mocks"
+	loggermock "github.com/estrys/estrys/internal/logger/mocks"
 	mockstwitter "github.com/estrys/estrys/internal/twitter/mocks"
 	"github.com/estrys/estrys/internal/twitter/models"
 	mockstwitterrepo "github.com/estrys/estrys/internal/twitter/repository/mocks"
@@ -294,6 +295,8 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 		},
 	}
 
+	nullLogger := loggermock.NewNullLogger()
+
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			fakeUserService := mocks.NewUserService(t)
@@ -305,6 +308,7 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 			}
 
 			tweetSvc := NewTweetService(
+				nullLogger,
 				fakeUserService,
 				fakeTwitterClient,
 				fateTweetRepo,

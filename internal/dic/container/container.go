@@ -130,6 +130,7 @@ func BuildContainer() error {
 		conf,
 	))
 	_ = dic.Register[domain.TweetService](domain.NewTweetService(
+		dic.GetService[logger.Logger](),
 		dic.GetService[domain.UserService](),
 		dic.GetService[twitter.TwitterClient](),
 		dic.GetService[twitterrepository.TweetRepository](),
