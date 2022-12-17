@@ -1,8 +1,10 @@
 {
   "@context": [
+    "http://joinmastodon.org/ns",
     "https://w3id.org/security/v1",
     "https://www.w3.org/ns/activitystreams"
   ],
+  "discoverable": false,
   "followers": "https://example.com/users/foobar/followers",
   "following": "https://example.com/users/foobar/following",
   "icon": {

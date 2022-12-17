@@ -215,6 +215,10 @@ func (a *activityPubService) GetActor(user *domainmodels.User) (map[string]any, 
 	icon.AppendActivityStreamsImage(image)
 	actor.SetActivityStreamsIcon(icon)
 
+	discoverable := streams.NewTootDiscoverableProperty()
+	discoverable.Set(false)
+	actor.SetTootDiscoverable(discoverable)
+
 	actor.SetJSONLDId(userID)
 
 	return a.serialize(actor)
