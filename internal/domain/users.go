@@ -14,6 +14,7 @@ import (
 	"github.com/estrys/estrys/internal/crypto"
 	"github.com/estrys/estrys/internal/domain/domainmodels"
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/repository"
 	"github.com/estrys/estrys/internal/twitter"
 )
@@ -21,7 +22,7 @@ import (
 //go:generate mockery --with-expecter --name=UserService
 type UserService interface {
 	GetFullUser(context.Context, string) (*domainmodels.User, error)
-	BatchCreateUsersFromIDs(context.Context, []string) error
+	BatchCreateUsersFromIDs(context.Context, []string) ([]*models.User, error)
 	BatchCreateUsers(ctx context.Context, allowedTwitterUsers []string) error
 }
 
@@ -93,26 +94,28 @@ func (u *userService) GetFullUser(ctx context.Context, username string) (*domain
 	return domainUser, nil
 }
 
-func (u *userService) BatchCreateUsersFromIDs(ctx context.Context, twitterIDs []string) error {
+func (u *userService) BatchCreateUsersFromIDs(ctx context.Context, twitterIDs []string) ([]*models.User, error) {
 	twitterUsers, err := u.twitterClient.GetUserByIDs(ctx, twitterIDs)
 	if err != nil {
-		return errors.Wrap(err, "unable to retrieve twitter users from id list")
+		return nil, errors.Wrap(err, "unable to retrieve twitter users from id list")
 	}
+	results := make([]*models.User, 0, len(twitterUsers))
 	for _, twitterUser := range twitterUsers {
 		user, err := u.repo.Get(ctx, twitterUser.ID)
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return errors.Wrap(err, "unable to fetch user from db")
+			return nil, errors.Wrap(err, "unable to fetch user from db")
 		}
 		if user == nil {
 			u.log.WithField("id", twitterUser.ID).Debug("user not found in database, creating it")
-			err = u.createUserFromTwitter(ctx, twitterUser)
+			user, err = u.createUserFromTwitter(ctx, twitterUser)
 			if err != nil {
-				return errors.Wrap(err, "unable to create user")
+				return nil, errors.Wrap(err, "unable to create user")
 			}
 			u.log.WithField("id", twitterUser.ID).Debug("new user created with new keypair")
 		}
+		results = append(results, user)
 	}
-	return nil
+	return results, nil
 }
 
 func (u *userService) BatchCreateUsers(ctx context.Context, usernames []string) error {
@@ -130,7 +133,7 @@ func (u *userService) BatchCreateUsers(ctx context.Context, usernames []string) 
 		}
 		if user == nil {
 			u.log.WithField("username", username).Debug("user not found in database, creating it")
-			err = u.createUserFromTwitter(ctx, twitterUser)
+			_, err = u.createUserFromTwitter(ctx, twitterUser)
 			if err != nil {
 				return err
 			}
@@ -140,23 +143,23 @@ func (u *userService) BatchCreateUsers(ctx context.Context, usernames []string) 
 	return nil
 }
 
-func (u *userService) createUserFromTwitter(ctx context.Context, twitterUser *gotwitter.UserObj) error {
+func (u *userService) createUserFromTwitter(ctx context.Context, twitterUser *gotwitter.UserObj) (*models.User, error) {
 	privateKey, err := u.keyManager.GenerateKey()
 	if err != nil {
-		return errors.Wrap(err, "unable to generate private key for user")
+		return nil, errors.Wrap(err, "unable to generate private key for user")
 	}
 	createdAt, err := time.Parse(time.RFC3339, twitterUser.CreatedAt)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse user creation date from twitter")
+		return nil, errors.Wrap(err, "unable to parse user creation date from twitter")
 	}
-	_, err = u.repo.CreateUser(ctx, repository.CreateUserRequest{
+	user, err := u.repo.CreateUser(ctx, repository.CreateUserRequest{
 		Username:   twitterUser.UserName,
 		ID:         twitterUser.ID,
 		CreatedAt:  createdAt,
 		PrivateKey: privateKey,
 	})
 	if err != nil {
-		return errors.Wrap(err, "unable to create user")
+		return nil, errors.Wrap(err, "unable to create user")
 	}
-	return nil
+	return user, nil
 }

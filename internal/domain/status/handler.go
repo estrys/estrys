@@ -27,16 +27,21 @@ func HandleStatus(responseWriter http.ResponseWriter, request *http.Request) err
 		return internalerrors.New("either username or id is not set", http.StatusBadRequest)
 	}
 
-	user, err := userService.GetFullUser(request.Context(), username)
-	if err != nil {
-		return internalerrors.Wrap(err, http.StatusNotFound).
-			WithUserMessage("user not found")
-	}
-
 	tweet, err := tweetRepository.GetTweet(request.Context(), tweetID)
 	if err != nil {
 		return internalerrors.Wrap(err, http.StatusNotFound).
 			WithUserMessage("tweet not found")
+	}
+
+	if tweet.AuthorUsername != username {
+		return internalerrors.Wrap(err, http.StatusBadRequest).
+			WithUserMessage("tweet not found for this user")
+	}
+
+	user, err := userService.GetFullUser(request.Context(), tweet.AuthorUsername)
+	if err != nil {
+		return internalerrors.Wrap(err, http.StatusNotFound).
+			WithUserMessage("user not found")
 	}
 
 	templateContent, _ := views.Views.ReadFile("status.html")
@@ -53,10 +58,25 @@ func HandleStatus(responseWriter http.ResponseWriter, request *http.Request) err
 			WithUserMessage("unable to generate status URL")
 	}
 
-	_ = statusTemplate.Execute(responseWriter, map[string]interface{}{
-		"url":   selfURL.String(),
-		"tweet": tweet,
-		"user":  user,
-	})
+	templateData := map[string]interface{}{
+		"isRetweet": false,
+		"url":       selfURL.String(),
+		"tweet":     tweet,
+		"user":      user,
+	}
+	// If we have a retweet, then fetch the retweet author and replace the current tweet by the retweet
+	if retweet := tweet.Retweet(); retweet != nil {
+		retweetUser, err := userService.GetFullUser(request.Context(), retweet.AuthorUsername)
+		if err == nil {
+			templateData["isRetweet"] = true
+			templateData["originalUser"] = user
+			templateData["tweet"] = retweet
+			templateData["user"] = retweetUser
+		}
+	}
+	err = statusTemplate.Execute(responseWriter, templateData)
+	if err != nil {
+		return internalerrors.Wrap(err, http.StatusInternalServerError)
+	}
 	return nil
 }

@@ -186,10 +186,11 @@ func Test_userService_BatchCreateUsers(t *testing.T) {
 
 func Test_userService_BatchCreateUsersFromIDs(t *testing.T) {
 	tests := []struct {
-		name  string
-		IDs   []string
-		mocks func(*mockstwitter.TwitterClient, *mocksuser.UserRepository)
-		err   string
+		name          string
+		IDs           []string
+		mocks         func(*mockstwitter.TwitterClient, *mocksuser.UserRepository)
+		expectedUsers []*models.User
+		err           string
 	}{
 		{
 			name: "unable to retrieve users",
@@ -289,11 +290,15 @@ func Test_userService_BatchCreateUsersFromIDs(t *testing.T) {
 						CreatedAt: fakeDateStr,
 					},
 				}, nil)
-				repository.EXPECT().Get(mock.Anything, "123").Return(&models.User{}, nil)
+				repository.EXPECT().Get(mock.Anything, "123").Return(&models.User{ID: "123"}, nil)
 				repository.EXPECT().Get(mock.Anything, "456").Return(nil, nil)
 				repository.EXPECT().CreateUser(mock.Anything, mock.MatchedBy(func(req userrepository.CreateUserRequest) bool {
 					return req.ID == "456" && req.CreatedAt == fakeDate && req.Username == "foobar"
-				})).Return(nil, nil)
+				})).Return(&models.User{ID: "456"}, nil)
+			},
+			expectedUsers: []*models.User{
+				{ID: "123"},
+				{ID: "456"},
 			},
 		},
 	}
@@ -311,11 +316,14 @@ func Test_userService_BatchCreateUsersFromIDs(t *testing.T) {
 				fakeUserRepo,
 				fakeTwitter,
 			)
-			err := u.BatchCreateUsersFromIDs(context.TODO(), tt.IDs)
+			users, err := u.BatchCreateUsersFromIDs(context.TODO(), tt.IDs)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 			} else {
 				require.NoError(t, err)
+			}
+			if tt.expectedUsers != nil {
+				require.Equal(t, tt.expectedUsers, users)
 			}
 		})
 	}

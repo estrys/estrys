@@ -11,6 +11,7 @@ const (
 type Tweet struct {
 	ID               string        `json:"id"`
 	AuthorID         string        `json:"-"`
+	AuthorUsername   string        `json:"-"`
 	ReferencedType   ReferenceType `json:"-"`
 	Text             string        `json:"text"`
 	Published        time.Time     `json:"published"`
@@ -18,11 +19,11 @@ type Tweet struct {
 	ReferencedTweets []Tweet       `json:"-"`
 }
 
-func (t *Tweet) IsRetweet() bool {
+func (t *Tweet) Retweet() *Tweet {
 	for _, refTweet := range t.ReferencedTweets {
 		if refTweet.ReferencedType == ReferenceTypeRetweet {
-			return true
+			return &refTweet
 		}
 	}
-	return false
+	return nil
 }
