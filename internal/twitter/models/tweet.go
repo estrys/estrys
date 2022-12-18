@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type ReferenceType string
 
@@ -17,6 +20,10 @@ type Tweet struct {
 	Published        time.Time     `json:"published"`
 	Sensitive        bool          `json:"sensitive"`
 	ReferencedTweets []Tweet       `json:"-"`
+}
+
+func (t *Tweet) IsAuthoredBy(username string) bool {
+	return strings.EqualFold(t.AuthorUsername, username)
 }
 
 func (t *Tweet) Retweet() *Tweet {

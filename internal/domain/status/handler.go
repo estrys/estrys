@@ -33,8 +33,10 @@ func HandleStatus(responseWriter http.ResponseWriter, request *http.Request) err
 			WithUserMessage("tweet not found")
 	}
 
-	if tweet.AuthorUsername != username {
+	if !tweet.IsAuthoredBy(username) {
 		return internalerrors.Wrap(err, http.StatusBadRequest).
+			WithContext("username", username).
+			WithContext("tweet_author_username", tweet.AuthorUsername).
 			WithUserMessage("tweet not found for this user")
 	}
 

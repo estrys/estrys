@@ -35,7 +35,9 @@ func (r *redisTweetRepository) GetTweet(ctx context.Context, tweetID string) (*m
 	if err != nil && !errors.Is(err, cache.ErrMiss) {
 		return nil, err
 	}
-	tweet.AuthorUsername = strings.ToLower(tweet.AuthorUsername)
+	if tweet != nil {
+		tweet.AuthorUsername = strings.ToLower(tweet.AuthorUsername)
+	}
 	return tweet, nil
 }
 
