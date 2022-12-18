@@ -172,14 +172,9 @@ func Test_twitterPoller_Start(t *testing.T) {
 					payload := map[string]any{}
 					_ = json.Unmarshal(task.Payload(), &payload)
 					expectedPayload := map[string]any{
-						"from": "foobar",
-						"to":   "https://example.com/actor_url",
-						"tweet": map[string]any{
-							"id":        "1337",
-							"text":      "tweet content",
-							"published": "2006-01-02T15:04:05Z",
-							"sensitive": true,
-						},
+						"from":     "foobar",
+						"to":       "https://example.com/actor_url",
+						"tweet_id": "1337",
 					}
 					match := task.Type() == tasks.TypeSendTweet &&
 						expectedPayload["from"] == payload["from"] &&
@@ -192,14 +187,9 @@ func Test_twitterPoller_Start(t *testing.T) {
 					payload := map[string]any{}
 					_ = json.Unmarshal(task.Payload(), &payload)
 					expectedPayload := map[string]any{
-						"from": "foobar",
-						"to":   "https://example.com/another_actor_url",
-						"tweet": map[string]any{
-							"id":        "1337",
-							"text":      "tweet content",
-							"published": "2006-01-02T15:04:05Z",
-							"sensitive": true,
-						},
+						"from":     "foobar",
+						"to":       "https://example.com/another_actor_url",
+						"tweet_id": "1337",
 					}
 					match := task.Type() == tasks.TypeSendTweet &&
 						expectedPayload["from"] == payload["from"] &&

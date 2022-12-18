@@ -18,14 +18,15 @@ import (
 	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/repository"
 	twittermodels "github.com/estrys/estrys/internal/twitter/models"
+	twitterrepository "github.com/estrys/estrys/internal/twitter/repository"
 	"github.com/estrys/estrys/internal/worker/queues"
 )
 
 type SendTweetInput struct {
-	TraceID string              `json:"trace_id"`
-	From    string              `json:"from"`
-	To      string              `json:"to"`
-	Tweet   twittermodels.Tweet `json:"tweet"`
+	TraceID string `json:"trace_id"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+	TweetID string `json:"tweet_id"`
 }
 
 func NewSendTweet(
@@ -38,7 +39,7 @@ func NewSendTweet(
 		TraceID: observability.GetTraceIDFromContext(ctx),
 		From:    user.Username,
 		To:      actor.URL,
-		Tweet:   tweet,
+		TweetID: tweet.ID,
 	})
 	if err != nil {
 		return nil, err //nolint:wrapcheck
@@ -58,6 +59,7 @@ func HandleSendTweet(ctx context.Context, task *asynq.Task) error {
 	vocabService := dic.GetService[activitypub.VocabService]()
 	userRepo := dic.GetService[repository.UserRepository]()
 	actorRepo := dic.GetService[repository.ActorRepository]()
+	tweetRepo := dic.GetService[twitterrepository.TweetRepository]()
 	activityPubClient := dic.GetService[activitypubclient.ActivityPubClient]()
 
 	var input SendTweetInput
@@ -66,18 +68,26 @@ func HandleSendTweet(ctx context.Context, task *asynq.Task) error {
 		return errors.Errorf("unable to deserialize task input : %v: %s", err, asynq.SkipRetry)
 	}
 
+	tweet, err := tweetRepo.GetTweet(ctx, input.TweetID)
+	if err != nil {
+		return errors.Wrapf(err, "unable retrieve tweet to send: %s", asynq.SkipRetry)
+	}
+	if tweet == nil {
+		return errors.Wrapf(err, "tweet not found in: %s", asynq.SkipRetry)
+	}
+
 	user, err := userRepo.Get(ctx, input.From)
 	if err != nil {
-		return errors.Wrap(err, "unable to fetch user from database")
+		return errors.Wrapf(err, "unable to fetch user from database: %s", asynq.SkipRetry)
 	}
 
 	actorURL, _ := url.Parse(input.To)
 	actor, err := actorRepo.Get(ctx, actorURL)
 	if err != nil {
-		return errors.Wrap(err, "unable to fetch actor from database")
+		return errors.Wrapf(err, "unable to fetch actor from database: %s", asynq.SkipRetry)
 	}
 
-	createNote, err := vocabService.GetCreateNoteFromTweet(user.Username, input.Tweet)
+	createNote, err := vocabService.GetCreateNoteFromTweet(user.Username, *tweet)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create an create tweet activity: %s", asynq.SkipRetry)
 	}
@@ -93,7 +103,7 @@ func HandleSendTweet(ctx context.Context, task *asynq.Task) error {
 	log.WithFields(logrus.Fields{
 		"from":  input.From,
 		"to":    input.To,
-		"tweet": input.Tweet.ID,
+		"tweet": tweet.ID,
 	}).Info("tweet sent")
 	return nil
 }
