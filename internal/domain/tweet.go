@@ -41,16 +41,21 @@ func NewTweetService(
 	}
 }
 
-func (t *tweetService) convertTweet(tweet *gotwitter.TweetObj) (*models.Tweet, error) {
+func (t *tweetService) convertTweet(
+	tweet *gotwitter.TweetObj,
+	referenceType models.ReferenceType,
+) (*models.Tweet, error) {
 	createdAt, err := time.Parse(time.RFC3339, tweet.CreatedAt)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to decode tweet date")
 	}
 	return &models.Tweet{
-		ID:        tweet.ID,
-		Text:      tweet.Text,
-		Published: createdAt,
-		Sensitive: tweet.PossiblySensitive,
+		ID:             tweet.ID,
+		ReferencedType: referenceType,
+		AuthorID:       tweet.AuthorID,
+		Text:           tweet.Text,
+		Published:      createdAt,
+		Sensitive:      tweet.PossiblySensitive,
 	}, nil
 }
 
@@ -92,7 +97,13 @@ func (t *tweetService) saveReferencedTweets(
 	// author infos
 	authorIDs := make([]string, 0, len(resp.Raw.Tweets))
 	for _, rawReferencedTweet := range resp.Raw.Tweets {
-		referencedTweet, err := t.convertTweet(rawReferencedTweet)
+		var referenceType models.ReferenceType
+		for _, refTweet := range rawTweet.ReferencedTweets {
+			if refTweet.ID == rawReferencedTweet.ID {
+				referenceType = models.ReferenceType(refTweet.Type)
+			}
+		}
+		referencedTweet, err := t.convertTweet(rawReferencedTweet, referenceType)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +145,7 @@ func (t *tweetService) SaveTweetAndReferences(
 		return tweet, nil
 	}
 
-	tweet, err := t.convertTweet(rawTweet)
+	tweet, err := t.convertTweet(rawTweet, "")
 	if err != nil {
 		return nil, err
 	}
