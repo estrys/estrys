@@ -40,10 +40,31 @@ func (suite *StatusHandlerTestSuite) TestHandleStatus() {
 	}
 	fakeDate, _ := time.Parse(time.RFC3339, "2006-01-02T15:04:05Z")
 	fakeTweet := &models.Tweet{
-		ID:        "1234",
-		Text:      "This is a fake tweet content",
-		Published: fakeDate,
-		Sensitive: false,
+		ID:             "1234",
+		AuthorUsername: "foobar",
+		Text:           "This is a fake tweet content",
+		Published:      fakeDate,
+		Sensitive:      false,
+	}
+
+	fakeRetweetedUser := &domainmodels.User{
+		Name:            "Foo Bar",
+		Username:        "fakeRTUser",
+		Description:     "foobar description",
+		ProfileImageURL: fakeProfileImage,
+	}
+	fakeRetweet := &models.Tweet{
+		ID:             "4321",
+		AuthorUsername: "fakeRTUser",
+		ReferencedTweets: []models.Tweet{
+			{
+				ID:             "7654",
+				AuthorUsername: "fakeRTUser",
+				ReferencedType: models.ReferenceTypeRetweet,
+				Text:           "Retweeted content",
+				Published:      fakeDate,
+			},
+		},
 	}
 
 	cases := []tests.HTTPTestCase{
@@ -62,32 +83,11 @@ func (suite *StatusHandlerTestSuite) TestHandleStatus() {
 			StatusCode: http.StatusBadRequest,
 		},
 		{
-			Name: "twitter user not found",
-			RequestOptions: []tests.RequestOption{
-				tests.RequestParams{Params: map[string]string{"username": fakeUser.Username, "id": fakeTweet.ID}},
-			},
-			Mock: func(t *testing.T) {
-				fakeUserService := mocks.NewUserService(t)
-				fakeUserService.On("GetFullUser", mock.Anything, fakeUser.Username).Return(
-					nil, errors.WithStack(domain.ErrUserDoesNotExist),
-				)
-				_ = dic.Register[domain.UserService](fakeUserService)
-			},
-			StatusCode: http.StatusNotFound,
-			GoldenFile: "errors/user_not_found.json",
-		},
-		{
 			Name: "tweet not found",
 			RequestOptions: []tests.RequestOption{
 				tests.RequestParams{Params: map[string]string{"username": fakeUser.Username, "id": fakeTweet.ID}},
 			},
 			Mock: func(t *testing.T) {
-				fakeUserService := mocks.NewUserService(t)
-				fakeUserService.On("GetFullUser", mock.Anything, fakeUser.Username).Return(
-					fakeUser, nil,
-				)
-				_ = dic.Register[domain.UserService](fakeUserService)
-
 				fakeTweetRepo := mocks2.NewTweetRepository(t)
 				fakeTweetRepo.On("GetTweet", mock.Anything, fakeTweet.ID).Return(
 					nil, errors.New("tweet not found"),
@@ -96,6 +96,42 @@ func (suite *StatusHandlerTestSuite) TestHandleStatus() {
 			},
 			StatusCode: http.StatusNotFound,
 			GoldenFile: "errors/tweet_not_found.json",
+		},
+		{
+			Name: "tweet username mismatch",
+			RequestOptions: []tests.RequestOption{
+				tests.RequestParams{Params: map[string]string{"username": "invalidUsername", "id": fakeTweet.ID}},
+			},
+			Mock: func(t *testing.T) {
+				fakeTweetRepo := mocks2.NewTweetRepository(t)
+				fakeTweetRepo.On("GetTweet", mock.Anything, fakeTweet.ID).Return(
+					fakeTweet, nil,
+				)
+				_ = dic.Register[repository.TweetRepository](fakeTweetRepo)
+			},
+			StatusCode: http.StatusBadRequest,
+			GoldenFile: "errors/username_mismatch.json",
+		},
+		{
+			Name: "twitter user not found",
+			RequestOptions: []tests.RequestOption{
+				tests.RequestParams{Params: map[string]string{"username": fakeUser.Username, "id": fakeTweet.ID}},
+			},
+			Mock: func(t *testing.T) {
+				fakeTweetRepo := mocks2.NewTweetRepository(t)
+				fakeTweetRepo.On("GetTweet", mock.Anything, fakeTweet.ID).Return(
+					fakeTweet, nil,
+				)
+				_ = dic.Register[repository.TweetRepository](fakeTweetRepo)
+
+				fakeUserService := mocks.NewUserService(t)
+				fakeUserService.On("GetFullUser", mock.Anything, fakeUser.Username).Return(
+					nil, errors.WithStack(domain.ErrUserDoesNotExist),
+				)
+				_ = dic.Register[domain.UserService](fakeUserService)
+			},
+			StatusCode: http.StatusNotFound,
+			GoldenFile: "errors/user_not_found.json",
 		},
 		{
 			Name: "ok",
@@ -117,6 +153,31 @@ func (suite *StatusHandlerTestSuite) TestHandleStatus() {
 			},
 			StatusCode: http.StatusOK,
 			GoldenFile: "status.html",
+		},
+		{
+			Name: "retweet_ok",
+			RequestOptions: []tests.RequestOption{
+				tests.RequestParams{Params: map[string]string{"username": fakeRetweetedUser.Username, "id": fakeRetweet.ID}},
+			},
+			Mock: func(t *testing.T) {
+				fakeTweetRepo := mocks2.NewTweetRepository(t)
+				fakeTweetRepo.On("GetTweet", mock.Anything, fakeRetweet.ID).Return(
+					fakeRetweet, nil,
+				)
+
+				fakeUserService := mocks.NewUserService(t)
+				fakeUserService.On("GetFullUser", mock.Anything, fakeRetweetedUser.Username).Return(
+					fakeRetweetedUser, nil,
+				)
+				fakeUserService.On("GetFullUser", mock.Anything, fakeRetweet.Retweet().AuthorUsername).Return(
+					fakeRetweetedUser, nil,
+				)
+
+				_ = dic.Register[domain.UserService](fakeUserService)
+				_ = dic.Register[repository.TweetRepository](fakeTweetRepo)
+			},
+			StatusCode: http.StatusOK,
+			GoldenFile: "status_retweet.html",
 		},
 	}
 

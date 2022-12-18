@@ -11,13 +11,13 @@ import (
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/twitter"
-	"github.com/estrys/estrys/internal/twitter/models"
+	twittermodels "github.com/estrys/estrys/internal/twitter/models"
 	"github.com/estrys/estrys/internal/twitter/repository"
 )
 
 //go:generate mockery --with-expecter --name=TweetService
 type TweetService interface {
-	SaveTweetAndReferences(context.Context, *gotwitter.TweetObj) (*models.Tweet, error)
+	SaveTweetAndReferences(context.Context, *gotwitter.TweetObj) (*twittermodels.Tweet, error)
 }
 
 type tweetService struct {
@@ -43,13 +43,13 @@ func NewTweetService(
 
 func (t *tweetService) convertTweet(
 	tweet *gotwitter.TweetObj,
-	referenceType models.ReferenceType,
-) (*models.Tweet, error) {
+	referenceType twittermodels.ReferenceType,
+) (*twittermodels.Tweet, error) {
 	createdAt, err := time.Parse(time.RFC3339, tweet.CreatedAt)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to decode tweet date")
 	}
-	return &models.Tweet{
+	return &twittermodels.Tweet{
 		ID:             tweet.ID,
 		ReferencedType: referenceType,
 		AuthorID:       tweet.AuthorID,
@@ -59,16 +59,16 @@ func (t *tweetService) convertTweet(
 	}, nil
 }
 
-func (t *tweetService) saveReferencedTweets(
+func (t *tweetService) fetchReferencedTweets(
 	ctx context.Context,
 	rawTweet *gotwitter.TweetObj,
-) ([]models.Tweet, error) {
-	var result = make([]models.Tweet, 0, len(rawTweet.ReferencedTweets))
+) ([]*twittermodels.Tweet, error) {
+	var result = make([]*twittermodels.Tweet, 0, len(rawTweet.ReferencedTweets))
 	var missingReferencedTweetsIDs = make([]string, 0, len(rawTweet.ReferencedTweets))
 	for _, referencedTweet := range rawTweet.ReferencedTweets {
 		// Check if a referenced tweet is already known and avoid to fetch it from twitter
 		if tweet, err := t.tweetRepo.GetTweet(ctx, referencedTweet.ID); err == nil && tweet != nil {
-			result = append(result, *tweet)
+			result = append(result, tweet)
 			continue
 		}
 		missingReferencedTweetsIDs = append(missingReferencedTweetsIDs, referencedTweet.ID)
@@ -95,33 +95,49 @@ func (t *tweetService) saveReferencedTweets(
 
 	// We store user ids from referenced tweets to see if we also need to fetch their
 	// author infos
-	authorIDs := make([]string, 0, len(resp.Raw.Tweets))
 	for _, rawReferencedTweet := range resp.Raw.Tweets {
-		var referenceType models.ReferenceType
+		var referenceType twittermodels.ReferenceType
 		for _, refTweet := range rawTweet.ReferencedTweets {
 			if refTweet.ID == rawReferencedTweet.ID {
-				referenceType = models.ReferenceType(refTweet.Type)
+				referenceType = twittermodels.ReferenceType(refTweet.Type)
 			}
 		}
 		referencedTweet, err := t.convertTweet(rawReferencedTweet, referenceType)
 		if err != nil {
 			return nil, err
 		}
-		err = t.tweetRepo.Store(ctx, referencedTweet)
-		if err != nil {
-			return nil, err
-		}
-		authorIDs = append(authorIDs, rawReferencedTweet.AuthorID)
-		result = append(result, *referencedTweet)
+		result = append(result, referencedTweet)
 		t.logger.WithField("id", referencedTweet.ID).Debug("saved referenced tweet")
 	}
 
-	err = t.userService.BatchCreateUsersFromIDs(ctx, authorIDs)
-	if err != nil {
-		return nil, err
-	}
-
 	return result, nil
+}
+
+func (t tweetService) saveReferencedTweets(
+	ctx context.Context,
+	referencedTweets []*twittermodels.Tweet,
+) error {
+	authorIDs := make([]string, 0, len(referencedTweets))
+	for _, referencedTweet := range referencedTweets {
+		authorIDs = append(authorIDs, referencedTweet.AuthorID)
+	}
+	authors, err := t.userService.BatchCreateUsersFromIDs(ctx, authorIDs)
+	if err != nil {
+		return errors.Wrap(err, "unable to create users for referenced tweets")
+	}
+	for _, referencedTweet := range referencedTweets {
+		for _, user := range authors {
+			if user.ID == referencedTweet.AuthorID {
+				referencedTweet.AuthorUsername = user.Username
+				break
+			}
+		}
+		err = t.tweetRepo.Store(ctx, referencedTweet)
+		if err != nil {
+			return errors.Wrap(err, "unable to save referenced tweet")
+		}
+	}
+	return nil
 }
 
 // SaveTweetAndReferences save the tweet in database.
@@ -129,7 +145,7 @@ func (t *tweetService) saveReferencedTweets(
 func (t *tweetService) SaveTweetAndReferences(
 	ctx context.Context,
 	rawTweet *gotwitter.TweetObj,
-) (*models.Tweet, error) {
+) (*twittermodels.Tweet, error) {
 	span := observability.StartSpan(ctx, "tweet.save", map[string]any{"tweet.id": rawTweet.ID})
 	if span != nil {
 		span.Status = sentry.SpanStatusInternalError
@@ -151,16 +167,22 @@ func (t *tweetService) SaveTweetAndReferences(
 	}
 
 	if len(rawTweet.ReferencedTweets) > 0 {
-		referencedTweets, err := t.saveReferencedTweets(ctx, rawTweet)
+		referencedTweets, err := t.fetchReferencedTweets(ctx, rawTweet)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to fetch referenced tweets")
 		}
-		tweet.ReferencedTweets = referencedTweets
+		err = t.saveReferencedTweets(ctx, referencedTweets)
+		if err != nil {
+			return nil, err
+		}
+		for _, referencedTweet := range referencedTweets {
+			tweet.ReferencedTweets = append(tweet.ReferencedTweets, *referencedTweet)
+		}
 	}
 
 	err = t.tweetRepo.Store(ctx, tweet)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to save tweet with references")
+		return nil, errors.Wrap(err, "unable to save tweet")
 	}
 
 	if span != nil {
