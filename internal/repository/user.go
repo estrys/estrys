@@ -93,6 +93,7 @@ func (u *userRepo) Get(ctx context.Context, usernameOrID string) (*models.User, 
 			return nil, errors.Wrap(err, "unable to fetch user from database")
 		}
 	}
+	user.Username = strings.ToLower(user.Username)
 	return user, nil
 }
 

@@ -50,7 +50,7 @@ func HandleStatus(responseWriter http.ResponseWriter, request *http.Request) err
 
 	selfURL, err := urlGenerator.URL(
 		routes.StatusRoute,
-		[]string{"username", username, "id", tweetID},
+		[]string{"username", tweet.AuthorUsername, "id", tweetID},
 		urlgenerator.OptionAbsoluteURL,
 	)
 	if err != nil {

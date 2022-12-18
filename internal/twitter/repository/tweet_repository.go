@@ -35,10 +35,12 @@ func (r *redisTweetRepository) GetTweet(ctx context.Context, tweetID string) (*m
 	if err != nil && !errors.Is(err, cache.ErrMiss) {
 		return nil, err
 	}
+	tweet.AuthorUsername = strings.ToLower(tweet.AuthorUsername)
 	return tweet, nil
 }
 
 func (r *redisTweetRepository) Store(ctx context.Context, tweet *models.Tweet) error {
+	tweet.AuthorUsername = strings.ToLower(tweet.AuthorUsername)
 	err := r.cache.Set(ctx, r.getTweetCacheKey(tweet.ID), *tweet)
 	if err != nil {
 		return err
