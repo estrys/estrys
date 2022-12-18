@@ -76,7 +76,7 @@ func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			err = errors.Errorf("got a panic during poller: " + string(debug.Stack()))
+			err = errors.Errorf("got a panic during poller: %s: %s", rec, string(debug.Stack()))
 		}
 	}()
 	tx := observability.StartTransaction(ctx, "poll_tweets")
