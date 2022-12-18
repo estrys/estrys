@@ -24,6 +24,7 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 
 	fakeCompleteTweetInput := &gotwitter.TweetObj{
 		ID:                "1234",
+		AuthorID:          "mainAuthorID",
 		Text:              "RT @someone: this text is gonna be truncated",
 		CreatedAt:         fakeDateStr,
 		PossiblySensitive: true,
@@ -62,6 +63,11 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 		AuthorUsername: "author2",
 		ReferencedType: twittermodels.ReferenceTypeRetweet,
 		Published:      fakeDate,
+	}
+	fakeMainAuthor := &models.User{
+		Username:  "mainauthor",
+		ID:        "mainAuthorID",
+		CreatedAt: fakeDate,
 	}
 	fakeAuthor1 := &models.User{
 		Username:  "author1",
@@ -129,15 +135,19 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				}, nil)
 				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{"author1", "author2"}).
 					Return([]*models.User{}, nil)
+				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{fakeCompleteTweetInput.AuthorID}).
+					Return([]*models.User{fakeMainAuthor}, nil)
 				// Not super usefull to test the content of the stored tweet here, we are gonna
 				// assert it with the output of this case
 				repository.EXPECT().Store(mock.Anything, mock.Anything).Return(nil)
 			},
 			output: &twittermodels.Tweet{
-				ID:        fakeCompleteTweetInput.ID,
-				Text:      fakeCompleteTweetInput.Text,
-				Published: fakeDate,
-				Sensitive: true,
+				ID:             fakeCompleteTweetInput.ID,
+				AuthorID:       fakeCompleteTweetInput.AuthorID,
+				AuthorUsername: fakeMainAuthor.Username,
+				Text:           fakeCompleteTweetInput.Text,
+				Published:      fakeDate,
+				Sensitive:      true,
 				ReferencedTweets: []twittermodels.Tweet{
 					{
 						ID:       "4321",
@@ -194,6 +204,8 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{"", ""}).
 					Return([]*models.User{}, nil)
 				repository.EXPECT().Store(mock.Anything, mock.Anything).Times(2).Return(nil)
+				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{fakeCompleteTweetInput.AuthorID}).
+					Return([]*models.User{fakeMainAuthor}, nil)
 				repository.EXPECT().Store(mock.Anything, mock.Anything).Times(1).Return(errors.New("repo error"))
 			},
 			err: "unable to save tweet: repo error",
@@ -246,6 +258,28 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 			err: `unable to fetch referenced tweets: unable to decode tweet date: parsing time "invalid_date" as "2006-01-02T15:04:05Z07:00": cannot parse "invalid_date" as "2006"`,
 		},
 		{
+			name:       "unable to fetch author for tweet",
+			tweetInput: fakeCompleteTweetInput,
+			mocks: func(userService *mocks.UserService, client *mockstwitter.TwitterClient, repository *mockstwitterrepo.TweetRepository) {
+				repository.EXPECT().GetTweet(mock.Anything, "1234").Return(nil, nil)
+				repository.EXPECT().GetTweet(mock.Anything, mock.Anything).Times(2).Return(nil, nil)
+				client.EXPECT().GetTweets(mock.Anything, []string{"4321", "7654"}, expectedTweetLookupOpts).
+					Return(&gotwitter.TweetLookupResponse{
+						Raw: &gotwitter.TweetRaw{
+							Tweets: []*gotwitter.TweetObj{
+								fakeReferencedTweet4321,
+								fakeReferencedTweet7654,
+							},
+						},
+					}, nil)
+				repository.EXPECT().Store(mock.Anything, fakeReferencedTweetModel4321).Return(nil)
+				repository.EXPECT().Store(mock.Anything, fakeReferencedTweetModel7654).Return(nil)
+				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{"authorID1", "authorID2"}).Return([]*models.User{fakeAuthor1, fakeAuthor2}, nil)
+				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{fakeCompleteTweetInput.AuthorID}).Return(nil, errors.New("author create failed"))
+			},
+			err: "unable to fetch author for tweet: author create failed",
+		},
+		{
 			name:       "ok",
 			tweetInput: fakeCompleteTweetInput,
 			mocks: func(userService *mocks.UserService, client *mockstwitter.TwitterClient, repository *mockstwitterrepo.TweetRepository) {
@@ -263,15 +297,18 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				repository.EXPECT().Store(mock.Anything, fakeReferencedTweetModel4321).Return(nil)
 				repository.EXPECT().Store(mock.Anything, fakeReferencedTweetModel7654).Return(nil)
 				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{"authorID1", "authorID2"}).Return([]*models.User{fakeAuthor1, fakeAuthor2}, nil)
+				userService.EXPECT().BatchCreateUsersFromIDs(mock.Anything, []string{fakeCompleteTweetInput.AuthorID}).Return([]*models.User{fakeMainAuthor}, nil)
 				// Not super usefull to test the content of the stored tweet here, we are gonna
 				// assert it with the output of this case
 				repository.EXPECT().Store(mock.Anything, mock.Anything).Return(nil)
 			},
 			output: &twittermodels.Tweet{
-				ID:        fakeCompleteTweetInput.ID,
-				Text:      fakeCompleteTweetInput.Text,
-				Published: fakeDate,
-				Sensitive: fakeCompleteTweetInput.PossiblySensitive,
+				ID:             fakeCompleteTweetInput.ID,
+				Text:           fakeCompleteTweetInput.Text,
+				AuthorID:       fakeCompleteTweetInput.AuthorID,
+				AuthorUsername: fakeMainAuthor.Username,
+				Published:      fakeDate,
+				Sensitive:      fakeCompleteTweetInput.PossiblySensitive,
 				ReferencedTweets: []twittermodels.Tweet{
 					*fakeReferencedTweetModel4321,
 					*fakeReferencedTweetModel7654,

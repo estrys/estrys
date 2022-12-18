@@ -180,6 +180,12 @@ func (t *tweetService) SaveTweetAndReferences(
 		}
 	}
 
+	author, err := t.userService.BatchCreateUsersFromIDs(ctx, []string{tweet.AuthorID})
+	if err != nil || len(author) != 1 {
+		return nil, errors.Wrap(err, "unable to fetch author for tweet")
+	}
+
+	tweet.AuthorUsername = author[0].Username
 	err = t.tweetRepo.Store(ctx, tweet)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to save tweet")
