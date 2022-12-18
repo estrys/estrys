@@ -102,6 +102,7 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 		},
 		TweetFields: []gotwitter.TweetField{
 			gotwitter.TweetFieldID,
+			gotwitter.TweetFieldAuthorID,
 			gotwitter.TweetFieldText,
 			gotwitter.TweetFieldCreatedAt,
 			gotwitter.TweetFieldPossiblySensitve,
@@ -124,7 +125,7 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 		for _, tweet := range tweets.Raw.Tweets {
 			err := c.handleTweet(ctx, user, tweet)
 			if err != nil {
-				c.log.WithError(err).Error()
+				return err
 			}
 			c.log.WithField("tweet", tweet.ID).Info("scheduled new tweet send")
 		}

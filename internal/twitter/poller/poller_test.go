@@ -206,6 +206,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 					},
 					TweetFields: []gotwitter.TweetField{
 						gotwitter.TweetFieldID,
+						gotwitter.TweetFieldAuthorID,
 						gotwitter.TweetFieldText,
 						gotwitter.TweetFieldCreatedAt,
 						gotwitter.TweetFieldPossiblySensitve,
@@ -390,6 +391,7 @@ func Test_twitterPoller_Start(t *testing.T) {
 					},
 					TweetFields: []gotwitter.TweetField{
 						gotwitter.TweetFieldID,
+						gotwitter.TweetFieldAuthorID,
 						gotwitter.TweetFieldText,
 						gotwitter.TweetFieldCreatedAt,
 						gotwitter.TweetFieldPossiblySensitve,
