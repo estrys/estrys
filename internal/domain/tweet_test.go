@@ -49,12 +49,16 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 	}
 
 	fakeReferencedTweetModel4321 := &models.Tweet{
-		ID:        "4321",
-		Published: fakeDate,
+		ID:             "4321",
+		AuthorID:       "author1",
+		ReferencedType: models.ReferenceTypeRetweet,
+		Published:      fakeDate,
 	}
 	fakeReferencedTweetModel7654 := &models.Tweet{
-		ID:        "7654",
-		Published: fakeDate,
+		ID:             "7654",
+		AuthorID:       "author2",
+		ReferencedType: models.ReferenceTypeRetweet,
+		Published:      fakeDate,
 	}
 
 	expectedTweetLookupOpts := gotwitter.TweetLookupOpts{
@@ -264,8 +268,10 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 			mocks: func(userService *mocks.UserService, client *mockstwitter.TwitterClient, repository *mockstwitterrepo.TweetRepository) {
 				repository.EXPECT().GetTweet(mock.Anything, "1234").Return(nil, nil)
 				repository.EXPECT().GetTweet(mock.Anything, "4321").Return(&models.Tweet{
-					ID:        "4321",
-					Published: fakeDate,
+					ID:             "4321",
+					AuthorID:       "author1",
+					ReferencedType: models.ReferenceTypeRetweet,
+					Published:      fakeDate,
 				}, nil)
 				repository.EXPECT().GetTweet(mock.Anything, "7654").Return(nil, nil)
 				client.EXPECT().GetTweets(mock.Anything, []string{"7654"}, expectedTweetLookupOpts).
