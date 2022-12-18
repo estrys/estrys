@@ -79,8 +79,8 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 			err = errors.Errorf("got a panic during poller: %s: %s", rec, string(debug.Stack()))
 		}
 	}()
-	tx := observability.StartTransaction(ctx, "poll_tweets")
-	tx.SetTag("has_tweets", "false")
+	tx := observability.StartTransaction(ctx, "tweets.poll")
+	tx.Sampled = sentry.SampledFalse
 	ctx = tx.Context()
 	if len(c.users) == c.userIndex {
 		c.log.WithField("index", c.userIndex).Trace("polled all twitter users from list, restarting ...")
@@ -121,7 +121,7 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 	}
 	userLogger.WithField("count", tweets.Meta.ResultCount).Trace("fetched tweets")
 	if tweets.Meta.ResultCount > 0 {
-		tx.SetTag("has_tweets", "true")
+		tx.Sampled = sentry.SampledTrue
 		for _, tweet := range tweets.Raw.Tweets {
 			err := c.handleTweet(ctx, user, tweet)
 			if err != nil {

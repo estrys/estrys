@@ -32,16 +32,8 @@ func Bootstrap() (context.Context, context.CancelFunc, error) {
 
 	if conf.SentryDSN != "" {
 		err := sentry.Init(sentry.ClientOptions{
-			Dsn: conf.SentryDSN,
-			TracesSampler: func(ctx sentry.SamplingContext) float64 {
-				// Ignore empty tweets polls
-				if ctx.Span.Op == "poller_tweet" &&
-					ctx.Span.Tags != nil &&
-					ctx.Span.Tags["has_tweets"] == "false" {
-					return 0
-				}
-				return conf.SentryTraceSampleRate
-			},
+			Dsn:              conf.SentryDSN,
+			TracesSampleRate: conf.SentryTraceSampleRate,
 			AttachStacktrace: true,
 			EnableTracing:    true,
 		})
