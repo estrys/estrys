@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/go-fed/activity/streams"
+	"github.com/go-fed/activity/streams/vocab"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
@@ -157,6 +159,11 @@ func HandleInbox(responseWriter http.ResponseWriter, request *http.Request) erro
 	jsonResolver, err := streams.NewJSONResolver(
 		inboxService.Follow,
 		inboxService.UnFollow,
+		func(_ context.Context, _ vocab.ActivityStreamsDelete) error {
+			// TODO Handle delete operations
+			//   this method is just implemented to limit noise in logs
+			return nil
+		},
 	)
 	if err != nil {
 		return internalerrors.Wrap(
