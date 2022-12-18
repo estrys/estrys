@@ -22,13 +22,19 @@ func (h *HTTPLoggerRoundTripper) RoundTrip(request *http.Request) (*http.Respons
 		)
 		resp, err := h.RoundTripper.RoundTrip(request)
 		observability.FinishSpan(span)
-		h.Log.WithFields(logrus.Fields{
+		log := h.Log.WithFields(logrus.Fields{
 			"host":   request.Host,
 			"method": request.Method,
-			"status": resp.StatusCode,
 			"url":    request.URL.Path,
 			"query":  request.URL.Query(),
-		}).Trace("http call")
+		})
+		if resp != nil {
+			log = log.WithField("status", resp.StatusCode)
+		}
+		if err != nil {
+			log = log.WithError(err)
+		}
+		log.Trace("http call")
 		return resp, err
 	}
 	return h.RoundTripper.RoundTrip(request)
