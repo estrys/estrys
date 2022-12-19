@@ -3,22 +3,12 @@ package tasks
 import (
 	"context"
 	"encoding/json"
-	"net/url"
 	"time"
 
 	"github.com/hibiken/asynq"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
-	"github.com/estrys/estrys/internal/activitypub"
-	activitypubclient "github.com/estrys/estrys/internal/activitypub/client"
-	"github.com/estrys/estrys/internal/dic"
-	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/observability"
-	"github.com/estrys/estrys/internal/repository"
-	twittermodels "github.com/estrys/estrys/internal/twitter/models"
-	twitterrepository "github.com/estrys/estrys/internal/twitter/repository"
 	"github.com/estrys/estrys/internal/worker/queues"
 )
 
@@ -33,13 +23,13 @@ func NewSendTweet(
 	ctx context.Context,
 	user *models.User,
 	actor *models.Actor,
-	tweet twittermodels.Tweet,
+	tweetID string,
 ) (*asynq.Task, error) {
 	payload, err := json.Marshal(SendTweetInput{
 		TraceID: observability.GetTraceIDFromContext(ctx),
 		From:    user.Username,
 		To:      actor.URL,
-		TweetID: tweet.ID,
+		TweetID: tweetID,
 	})
 	if err != nil {
 		return nil, err //nolint:wrapcheck
@@ -52,58 +42,4 @@ func NewSendTweet(
 		asynq.Queue(queues.QueueTweets),
 		asynq.Retention(1*time.Hour),
 	), nil
-}
-
-func HandleSendTweet(ctx context.Context, task *asynq.Task) error {
-	log := dic.GetService[logger.Logger]()
-	vocabService := dic.GetService[activitypub.VocabService]()
-	userRepo := dic.GetService[repository.UserRepository]()
-	actorRepo := dic.GetService[repository.ActorRepository]()
-	tweetRepo := dic.GetService[twitterrepository.TweetRepository]()
-	activityPubClient := dic.GetService[activitypubclient.ActivityPubClient]()
-
-	var input SendTweetInput
-	if err := json.Unmarshal(task.Payload(), &input); err != nil {
-		log.WithError(err).Error("unable to deserialize task input")
-		return errors.Errorf("unable to deserialize task input : %v: %s", err, asynq.SkipRetry)
-	}
-
-	tweet, err := tweetRepo.GetTweet(ctx, input.TweetID)
-	if err != nil {
-		return errors.Wrapf(err, "unable retrieve tweet to send: %s", asynq.SkipRetry)
-	}
-	if tweet == nil {
-		return errors.Wrapf(err, "tweet not found in: %s", asynq.SkipRetry)
-	}
-
-	user, err := userRepo.Get(ctx, input.From)
-	if err != nil {
-		return errors.Wrapf(err, "unable to fetch user from database: %s", asynq.SkipRetry)
-	}
-
-	actorURL, _ := url.Parse(input.To)
-	actor, err := actorRepo.Get(ctx, actorURL)
-	if err != nil {
-		return errors.Wrapf(err, "unable to fetch actor from database: %s", asynq.SkipRetry)
-	}
-
-	createNote, err := vocabService.GetCreateNoteFromTweet(user.Username, *tweet)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create an create tweet activity: %s", asynq.SkipRetry)
-	}
-	err = activityPubClient.PostInbox(ctx, actor, user, createNote)
-	if err != nil {
-		var isNotAcceptedErr *activitypubclient.InboxNotAcceptedError
-		if errors.As(err, isNotAcceptedErr) {
-			return errors.Wrapf(err, "post to inbox was not accepted: %s", asynq.SkipRetry)
-		}
-		return errors.Wrapf(err, "unable to send create tweet: %s", asynq.SkipRetry)
-	}
-
-	log.WithFields(logrus.Fields{
-		"from":  input.From,
-		"to":    input.To,
-		"tweet": tweet.ID,
-	}).Info("tweet sent")
-	return nil
 }

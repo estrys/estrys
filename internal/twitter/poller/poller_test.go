@@ -18,15 +18,12 @@ import (
 	"github.com/estrys/estrys/internal/models"
 	mocksuser "github.com/estrys/estrys/internal/repository/mocks"
 	mockstwitter "github.com/estrys/estrys/internal/twitter/mocks"
-	twittermodels "github.com/estrys/estrys/internal/twitter/models"
 	"github.com/estrys/estrys/internal/twitter/poller"
 	mocksworker "github.com/estrys/estrys/internal/worker/client/mocks"
 	"github.com/estrys/estrys/internal/worker/tasks"
 )
 
 func Test_twitterPoller_Start(t *testing.T) {
-	fakeDateStr := "2006-01-02T15:04:05Z"
-	fakeDate, _ := time.Parse(time.RFC3339, fakeDateStr)
 	cases := []struct {
 		name      string
 		assertErr func(*testing.T, error)
@@ -144,18 +141,6 @@ func Test_twitterPoller_Start(t *testing.T) {
 						nil,
 					)
 
-				tweetService.EXPECT().SaveTweetAndReferences(mock.Anything, &gotwitter.TweetObj{
-					ID:                "1337",
-					Text:              "tweet content",
-					CreatedAt:         fakeDateStr,
-					PossiblySensitive: true,
-				}).Return(&twittermodels.Tweet{
-					ID:        "1337",
-					Text:      "tweet content",
-					Published: fakeDate,
-					Sensitive: true,
-				}, nil)
-
 				fakeRepo.On("GetFollowers", mock.Anything, &models.User{
 					ID:       "123",
 					Username: "foobar",
@@ -206,11 +191,6 @@ func Test_twitterPoller_Start(t *testing.T) {
 					},
 					TweetFields: []gotwitter.TweetField{
 						gotwitter.TweetFieldID,
-						gotwitter.TweetFieldAuthorID,
-						gotwitter.TweetFieldText,
-						gotwitter.TweetFieldCreatedAt,
-						gotwitter.TweetFieldPossiblySensitve,
-						gotwitter.TweetFieldReferencedTweets,
 					},
 					SinceID: "1",
 				}).
@@ -391,11 +371,6 @@ func Test_twitterPoller_Start(t *testing.T) {
 					},
 					TweetFields: []gotwitter.TweetField{
 						gotwitter.TweetFieldID,
-						gotwitter.TweetFieldAuthorID,
-						gotwitter.TweetFieldText,
-						gotwitter.TweetFieldCreatedAt,
-						gotwitter.TweetFieldPossiblySensitve,
-						gotwitter.TweetFieldReferencedTweets,
 					},
 					SinceID: "1",
 				}).
@@ -433,7 +408,6 @@ func Test_twitterPoller_Start(t *testing.T) {
 				mocks.NewNullLogger(),
 				fakeTwitterClient,
 				fakeUserRepo,
-				fakeTweetService,
 				fakeWorker,
 			)
 			err := poller.Start(fakeContext)
