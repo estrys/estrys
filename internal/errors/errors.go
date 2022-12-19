@@ -1,13 +1,11 @@
 package errors
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/hibiken/asynq"
 	"github.com/pkg/errors"
 
 	"github.com/estrys/estrys/internal/dic"
@@ -134,20 +132,5 @@ func HTTPErrorHandler(handler ErrorAwareHTTPHandler) func(w http.ResponseWriter,
 			responseWriter.WriteHeader(handlerError.HTTPCode)
 			_, _ = responseWriter.Write(respBody)
 		}
-	}
-}
-
-func AsynqErrorHandler() asynq.ErrorHandlerFunc {
-	log := dic.GetService[logger.Logger]()
-	return func(ctx context.Context, task *asynq.Task, err error) {
-		log.WithError(err).Error("Background task failed")
-		sentry.WithScope(func(scope *sentry.Scope) {
-			scope.SetContext("task", map[string]interface{}{
-				"task_type": task.Type(),
-				"payload":   string(task.Payload()),
-			})
-			scope.SetTag("task_type", task.Type())
-			sentry.CaptureException(err)
-		})
 	}
 }

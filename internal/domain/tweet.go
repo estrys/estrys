@@ -17,7 +17,7 @@ import (
 
 //go:generate mockery --with-expecter --name=TweetService
 type TweetService interface {
-	SaveTweetAndReferences(context.Context, *gotwitter.TweetObj) (*twittermodels.Tweet, error)
+	SaveTweetAndReferences(context.Context, string) (*twittermodels.Tweet, error)
 }
 
 type tweetService struct {
@@ -80,10 +80,12 @@ func (t *tweetService) fetchReferencedTweets(
 
 	resp, err := t.tweeterClient.GetTweets(ctx, missingReferencedTweetsIDs, gotwitter.TweetLookupOpts{
 		TweetFields: []gotwitter.TweetField{
+			gotwitter.TweetFieldID,
+			gotwitter.TweetFieldAuthorID,
 			gotwitter.TweetFieldText,
 			gotwitter.TweetFieldCreatedAt,
 			gotwitter.TweetFieldPossiblySensitve,
-			gotwitter.TweetFieldAuthorID,
+			gotwitter.TweetFieldReferencedTweets,
 		},
 	})
 	if err != nil {
@@ -113,7 +115,7 @@ func (t *tweetService) fetchReferencedTweets(
 	return result, nil
 }
 
-func (t tweetService) saveReferencedTweets(
+func (t *tweetService) saveReferencedTweets(
 	ctx context.Context,
 	referencedTweets []*twittermodels.Tweet,
 ) error {
@@ -140,13 +142,33 @@ func (t tweetService) saveReferencedTweets(
 	return nil
 }
 
+func (t tweetService) fetchRawTweet(ctx context.Context, tweetID string) (*gotwitter.TweetObj, error) {
+	tweetResponse, err := t.tweeterClient.GetTweets(ctx, []string{tweetID}, gotwitter.TweetLookupOpts{
+		TweetFields: []gotwitter.TweetField{
+			gotwitter.TweetFieldID,
+			gotwitter.TweetFieldAuthorID,
+			gotwitter.TweetFieldText,
+			gotwitter.TweetFieldCreatedAt,
+			gotwitter.TweetFieldPossiblySensitve,
+			gotwitter.TweetFieldReferencedTweets,
+		},
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "error while fetching tweet details from twitter")
+	}
+	if len(tweetResponse.Raw.Tweets) != 1 {
+		return nil, errors.New("no tweets returned, expected one")
+	}
+	return tweetResponse.Raw.Tweets[0], nil
+}
+
 // SaveTweetAndReferences save the tweet in database.
 // Also resolve all referenced tweets and their authors and save them in the database too.
 func (t *tweetService) SaveTweetAndReferences(
 	ctx context.Context,
-	rawTweet *gotwitter.TweetObj,
+	tweetID string,
 ) (*twittermodels.Tweet, error) {
-	span := observability.StartSpan(ctx, "tweet.save", map[string]any{"tweet.id": rawTweet.ID})
+	span := observability.StartSpan(ctx, "tweet.save", map[string]any{"tweet.id": tweetID})
 	if span != nil {
 		span.Status = sentry.SpanStatusInternalError
 		ctx = span.Context()
@@ -154,11 +176,16 @@ func (t *tweetService) SaveTweetAndReferences(
 	}
 
 	// Check if a tweet is already known and return it
-	if tweet, err := t.tweetRepo.GetTweet(ctx, rawTweet.ID); err == nil && tweet != nil {
+	if tweet, err := t.tweetRepo.GetTweet(ctx, tweetID); err == nil && tweet != nil {
 		if span != nil {
 			span.Status = sentry.SpanStatusAlreadyExists
 		}
 		return tweet, nil
+	}
+
+	rawTweet, err := t.fetchRawTweet(ctx, tweetID)
+	if err != nil {
+		return nil, err
 	}
 
 	tweet, err := t.convertTweet(rawTweet, "")

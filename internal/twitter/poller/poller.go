@@ -9,7 +9,6 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
 
-	"github.com/estrys/estrys/internal/domain"
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/observability"
@@ -24,15 +23,14 @@ type TwitterPoller interface {
 }
 
 type twitterPoller struct {
-	log          logger.Logger
-	twitter      twitter.TwitterClient
-	repo         repository.UserRepository
-	tweetService domain.TweetService
-	worker       client.BackgroundWorkerClient
-	users        models.UserSlice
-	userCursors  map[string]string
-	userIndex    int
-	startTime    time.Time
+	log         logger.Logger
+	twitter     twitter.TwitterClient
+	repo        repository.UserRepository
+	worker      client.BackgroundWorkerClient
+	users       models.UserSlice
+	userCursors map[string]string
+	userIndex   int
+	startTime   time.Time
 }
 
 var (
@@ -48,16 +46,14 @@ func NewPoller(
 	log logger.Logger,
 	client twitter.TwitterClient,
 	repo repository.UserRepository,
-	tweetService domain.TweetService,
 	worker client.BackgroundWorkerClient,
 ) *twitterPoller {
 	return &twitterPoller{
-		log:          log,
-		twitter:      client,
-		repo:         repo,
-		tweetService: tweetService,
-		worker:       worker,
-		userCursors:  map[string]string{},
+		log:         log,
+		twitter:     client,
+		repo:        repo,
+		worker:      worker,
+		userCursors: map[string]string{},
 	}
 }
 
@@ -103,11 +99,6 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 		},
 		TweetFields: []gotwitter.TweetField{
 			gotwitter.TweetFieldID,
-			gotwitter.TweetFieldAuthorID,
-			gotwitter.TweetFieldText,
-			gotwitter.TweetFieldCreatedAt,
-			gotwitter.TweetFieldPossiblySensitve,
-			gotwitter.TweetFieldReferencedTweets,
 		},
 	}
 	if cursor, exist := c.userCursors[c.users[c.userIndex].Username]; exist {
@@ -146,16 +137,12 @@ func (c *twitterPoller) handleTweet(
 	user *models.User,
 	rawTweet *gotwitter.TweetObj,
 ) error {
-	tweet, err := c.tweetService.SaveTweetAndReferences(ctx, rawTweet)
-	if err != nil {
-		return errors.Wrap(err, "unable to save tweets and references")
-	}
 	actors, err := c.repo.GetFollowers(ctx, user)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve followers for user")
 	}
 	for _, actor := range actors {
-		sendTweetTask, err := tasks.NewSendTweet(ctx, user, actor, *tweet)
+		sendTweetTask, err := tasks.NewSendTweet(ctx, user, actor, rawTweet.ID)
 		if err != nil {
 			return errors.Wrap(err, "unable to create send tweet task")
 		}

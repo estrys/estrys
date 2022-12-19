@@ -140,7 +140,6 @@ func BuildContainer() error {
 		dic.GetService[logger.Logger](),
 		dic.GetService[twitter.TwitterClient](),
 		dic.GetService[repository.UserRepository](),
-		dic.GetService[domain.TweetService](),
 		dic.GetService[client.BackgroundWorkerClient](),
 	))
 
