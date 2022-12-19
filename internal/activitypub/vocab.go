@@ -375,6 +375,21 @@ func (a *activityPubService) GetCreateNoteFromTweet(
 	note.SetActivityStreamsSensitive(sensitive)
 	obj := streams.NewActivityStreamsObjectProperty()
 	obj.AppendActivityStreamsNote(note)
+
+	attachments := streams.NewActivityStreamsAttachmentProperty()
+	for _, media := range tweet.Medias {
+		doc := streams.NewActivityStreamsDocument()
+		mediaType := streams.NewActivityStreamsMediaTypeProperty()
+		// TODO Handle this dynamically
+		mediaType.Set("image/jpeg")
+		doc.SetActivityStreamsMediaType(mediaType)
+		mediaURL := streams.NewActivityStreamsUrlProperty()
+		mediaURL.AppendIRI(media.URL)
+		doc.SetActivityStreamsUrl(mediaURL)
+		attachments.AppendActivityStreamsDocument(doc)
+	}
+	note.SetActivityStreamsAttachment(attachments)
+
 	create.SetActivityStreamsTo(noteTo)
 	create.SetActivityStreamsPublished(notePublished)
 	create.SetActivityStreamsObject(obj)

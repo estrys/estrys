@@ -2,6 +2,9 @@ package domain
 
 import (
 	"context"
+	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
 	gotwitter "github.com/g8rswimmer/go-twitter/v2"
@@ -44,19 +47,53 @@ func NewTweetService(
 func (t *tweetService) convertTweet(
 	tweet *gotwitter.TweetObj,
 	referenceType twittermodels.ReferenceType,
+	include *gotwitter.TweetRawIncludes,
 ) (*twittermodels.Tweet, error) {
+	text := tweet.Text
+	// TODO Implement a proper tweet text processor
+	// This one will just drop the last link added by twitter
+	text = regexp.MustCompile(`\shttps://t\.co/.{10}$`).ReplaceAllString(text, "")
+
+	tweetModel := &twittermodels.Tweet{
+		ID:             tweet.ID,
+		ReferencedType: referenceType,
+		AuthorID:       tweet.AuthorID,
+		Text:           text,
+		Sensitive:      tweet.PossiblySensitive,
+	}
+
 	createdAt, err := time.Parse(time.RFC3339, tweet.CreatedAt)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to decode tweet date")
 	}
-	return &twittermodels.Tweet{
-		ID:             tweet.ID,
-		ReferencedType: referenceType,
-		AuthorID:       tweet.AuthorID,
-		Text:           tweet.Text,
-		Published:      createdAt,
-		Sensitive:      tweet.PossiblySensitive,
-	}, nil
+	tweetModel.Published = createdAt
+
+	if tweet.Attachments != nil && include != nil {
+		for _, mediaKey := range tweet.Attachments.MediaKeys {
+			for _, media := range include.Media {
+				if mediaKey == media.Key {
+					mediaURL, _ := url.Parse(media.URL)
+					tweetModel.Medias = append(tweetModel.Medias, twittermodels.TweetMedia{
+						Type:   twittermodels.MediaType(media.Type),
+						URL:    mediaURL,
+						Width:  media.Width,
+						Height: media.Height,
+					})
+				}
+			}
+		}
+	}
+
+	if include != nil {
+		for _, user := range include.Users {
+			if tweet.AuthorID == user.ID {
+				tweetModel.AuthorUsername = strings.ToLower(user.UserName)
+				break
+			}
+		}
+	}
+
+	return tweetModel, nil
 }
 
 func (t *tweetService) fetchReferencedTweets(
@@ -78,33 +115,21 @@ func (t *tweetService) fetchReferencedTweets(
 		return result, nil
 	}
 
-	resp, err := t.tweeterClient.GetTweets(ctx, missingReferencedTweetsIDs, gotwitter.TweetLookupOpts{
-		TweetFields: []gotwitter.TweetField{
-			gotwitter.TweetFieldID,
-			gotwitter.TweetFieldAuthorID,
-			gotwitter.TweetFieldText,
-			gotwitter.TweetFieldCreatedAt,
-			gotwitter.TweetFieldPossiblySensitve,
-			gotwitter.TweetFieldReferencedTweets,
-		},
-	})
+	resp, err := t.fetchRawTweet(ctx, missingReferencedTweetsIDs)
 	if err != nil {
 		return nil, err
-	}
-	if len(resp.Raw.Errors) != 0 {
-		return nil, errors.New("unable to fetch tweets")
 	}
 
 	// We store user ids from referenced tweets to see if we also need to fetch their
 	// author infos
-	for _, rawReferencedTweet := range resp.Raw.Tweets {
+	for _, rawReferencedTweet := range resp.Tweets {
 		var referenceType twittermodels.ReferenceType
 		for _, refTweet := range rawTweet.ReferencedTweets {
 			if refTweet.ID == rawReferencedTweet.ID {
 				referenceType = twittermodels.ReferenceType(refTweet.Type)
 			}
 		}
-		referencedTweet, err := t.convertTweet(rawReferencedTweet, referenceType)
+		referencedTweet, err := t.convertTweet(rawReferencedTweet, referenceType, resp.Includes)
 		if err != nil {
 			return nil, err
 		}
@@ -123,17 +148,11 @@ func (t *tweetService) saveReferencedTweets(
 	for _, referencedTweet := range referencedTweets {
 		authorIDs = append(authorIDs, referencedTweet.AuthorID)
 	}
-	authors, err := t.userService.BatchCreateUsersFromIDs(ctx, authorIDs)
+	_, err := t.userService.BatchCreateUsersFromIDs(ctx, authorIDs)
 	if err != nil {
 		return errors.Wrap(err, "unable to create users for referenced tweets")
 	}
 	for _, referencedTweet := range referencedTweets {
-		for _, user := range authors {
-			if user.ID == referencedTweet.AuthorID {
-				referencedTweet.AuthorUsername = user.Username
-				break
-			}
-		}
 		err = t.tweetRepo.Store(ctx, referencedTweet)
 		if err != nil {
 			return errors.Wrap(err, "unable to save referenced tweet")
@@ -142,8 +161,19 @@ func (t *tweetService) saveReferencedTweets(
 	return nil
 }
 
-func (t tweetService) fetchRawTweet(ctx context.Context, tweetID string) (*gotwitter.TweetObj, error) {
-	tweetResponse, err := t.tweeterClient.GetTweets(ctx, []string{tweetID}, gotwitter.TweetLookupOpts{
+func (t *tweetService) fetchRawTweet(ctx context.Context, ids []string) (*gotwitter.TweetRaw, error) {
+	tweetResponse, err := t.tweeterClient.GetTweets(ctx, ids, gotwitter.TweetLookupOpts{
+		Expansions: []gotwitter.Expansion{
+			gotwitter.ExpansionAttachmentsMediaKeys,
+			gotwitter.ExpansionReferencedTweetsID,
+			gotwitter.ExpansionReferencedTweetsIDAuthorID,
+		},
+		MediaFields: []gotwitter.MediaField{
+			gotwitter.MediaFieldType,
+			gotwitter.MediaFieldURL,
+			gotwitter.MediaFieldWidth,
+			gotwitter.MediaFieldHeight,
+		},
 		TweetFields: []gotwitter.TweetField{
 			gotwitter.TweetFieldID,
 			gotwitter.TweetFieldAuthorID,
@@ -156,10 +186,10 @@ func (t tweetService) fetchRawTweet(ctx context.Context, tweetID string) (*gotwi
 	if err != nil {
 		return nil, errors.Wrap(err, "error while fetching tweet details from twitter")
 	}
-	if len(tweetResponse.Raw.Tweets) != 1 {
-		return nil, errors.New("no tweets returned, expected one")
+	if len(tweetResponse.Raw.Tweets) != len(ids) {
+		return nil, errors.Errorf("expected %d tweets to be returned", len(ids))
 	}
-	return tweetResponse.Raw.Tweets[0], nil
+	return tweetResponse.Raw, nil
 }
 
 // SaveTweetAndReferences save the tweet in database.
@@ -183,18 +213,18 @@ func (t *tweetService) SaveTweetAndReferences(
 		return tweet, nil
 	}
 
-	rawTweet, err := t.fetchRawTweet(ctx, tweetID)
+	rawTweet, err := t.fetchRawTweet(ctx, []string{tweetID})
 	if err != nil {
 		return nil, err
 	}
 
-	tweet, err := t.convertTweet(rawTweet, "")
+	tweet, err := t.convertTweet(rawTweet.Tweets[0], "", rawTweet.Includes)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(rawTweet.ReferencedTweets) > 0 {
-		referencedTweets, err := t.fetchReferencedTweets(ctx, rawTweet)
+	if len(rawTweet.Tweets[0].ReferencedTweets) > 0 {
+		referencedTweets, err := t.fetchReferencedTweets(ctx, rawTweet.Tweets[0])
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to fetch referenced tweets")
 		}
@@ -207,12 +237,11 @@ func (t *tweetService) SaveTweetAndReferences(
 		}
 	}
 
-	author, err := t.userService.BatchCreateUsersFromIDs(ctx, []string{tweet.AuthorID})
-	if err != nil || len(author) != 1 {
+	_, err = t.userService.BatchCreateUsersFromIDs(ctx, []string{tweet.AuthorID})
+	if err != nil {
 		return nil, errors.Wrap(err, "unable to fetch author for tweet")
 	}
 
-	tweet.AuthorUsername = author[0].Username
 	err = t.tweetRepo.Store(ctx, tweet)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to save tweet")

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"net/url"
 	"strings"
 	"time"
 )
@@ -11,15 +12,28 @@ const (
 	ReferenceTypeRetweet ReferenceType = "retweeted"
 )
 
+type MediaType string
+
+const (
+	MediaTypePhoto MediaType = "photo"
+)
+
+type TweetMedia struct {
+	Type          MediaType
+	URL           *url.URL
+	Width, Height int
+}
+
 type Tweet struct {
-	ID               string        `json:"id"`
-	AuthorID         string        `json:"-"`
-	AuthorUsername   string        `json:"-"`
-	ReferencedType   ReferenceType `json:"-"`
-	Text             string        `json:"text"`
-	Published        time.Time     `json:"published"`
-	Sensitive        bool          `json:"sensitive"`
-	ReferencedTweets []Tweet       `json:"-"`
+	ID               string
+	AuthorID         string
+	AuthorUsername   string
+	ReferencedType   ReferenceType
+	Text             string
+	Published        time.Time
+	Sensitive        bool
+	ReferencedTweets []Tweet
+	Medias           []TweetMedia
 }
 
 func (t *Tweet) IsAuthoredBy(username string) bool {
