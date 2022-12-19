@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"net/url"
 	"testing"
 	"time"
 
@@ -25,9 +26,12 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 	fakeCompleteTweet := &gotwitter.TweetObj{
 		ID:                "1234",
 		AuthorID:          "mainAuthorID",
-		Text:              "RT @someone: this text is gonna be truncated",
+		Text:              `RT @someone: this text is gonna be truncated https://t.co/XaDNSVVB9l https://t.co/kdkjgnLWo5`,
 		CreatedAt:         fakeDateStr,
 		PossiblySensitive: true,
+		Attachments: &gotwitter.TweetAttachmentsObj{
+			MediaKeys: []string{"photo1"},
+		},
 		ReferencedTweets: []*gotwitter.TweetReferencedTweetObj{
 			{
 				Type: "retweeted",
@@ -80,7 +84,24 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 		CreatedAt: fakeDate,
 	}
 
+	fakeMediaURL, _ := url.Parse("https://example.com/photo.jpeg")
+	fakeMedia := twittermodels.TweetMedia{
+		Type: twittermodels.MediaTypePhoto,
+		URL:  fakeMediaURL,
+	}
+
 	expectedTweetLookupOpts := gotwitter.TweetLookupOpts{
+		Expansions: []gotwitter.Expansion{
+			gotwitter.ExpansionAttachmentsMediaKeys,
+			gotwitter.ExpansionReferencedTweetsID,
+			gotwitter.ExpansionReferencedTweetsIDAuthorID,
+		},
+		MediaFields: []gotwitter.MediaField{
+			gotwitter.MediaFieldType,
+			gotwitter.MediaFieldURL,
+			gotwitter.MediaFieldWidth,
+			gotwitter.MediaFieldHeight,
+		},
 		TweetFields: []gotwitter.TweetField{
 			gotwitter.TweetFieldID,
 			gotwitter.TweetFieldAuthorID,
@@ -129,7 +150,7 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 						Raw: &gotwitter.TweetRaw{},
 					}, nil)
 			},
-			err:     `no tweets returned, expected one`,
+			err:     `expected 1 tweets to be returned`,
 			tweetID: "1234",
 		},
 		{
@@ -139,7 +160,17 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				repository.EXPECT().GetTweet(mock.Anything, "1234").Return(nil, nil)
 				client.EXPECT().GetTweets(mock.Anything, []string{"1234"}, expectedTweetLookupOpts).
 					Return(&gotwitter.TweetLookupResponse{
-						Raw: &gotwitter.TweetRaw{Tweets: []*gotwitter.TweetObj{fakeCompleteTweet}},
+						Raw: &gotwitter.TweetRaw{
+							Includes: &gotwitter.TweetRawIncludes{
+								Users: []*gotwitter.UserObj{
+									{
+										ID:       fakeMainAuthor.ID,
+										UserName: fakeMainAuthor.Username,
+									},
+								},
+							},
+							Tweets: []*gotwitter.TweetObj{fakeCompleteTweet},
+						},
 					}, nil)
 				repository.EXPECT().GetTweet(mock.Anything, "4321").Times(1).Return(&twittermodels.Tweet{
 					ID:       "4321",
@@ -161,7 +192,7 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				ID:             fakeCompleteTweet.ID,
 				AuthorID:       fakeCompleteTweet.AuthorID,
 				AuthorUsername: fakeMainAuthor.Username,
-				Text:           fakeCompleteTweet.Text,
+				Text:           "RT @someone: this text is gonna be truncated https://t.co/XaDNSVVB9l",
 				Published:      fakeDate,
 				Sensitive:      true,
 				ReferencedTweets: []twittermodels.Tweet{
@@ -251,7 +282,7 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				client.EXPECT().GetTweets(mock.Anything, []string{"4321", "7654"}, expectedTweetLookupOpts).
 					Return(nil, errors.New("twitter client error"))
 			},
-			err: "unable to fetch referenced tweets: twitter client error",
+			err: "unable to fetch referenced tweets: error while fetching tweet details from twitter: twitter client error",
 		},
 		{
 			name:    "tweeter client error while fetching referenced tweets",
@@ -272,7 +303,7 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 						},
 					}, nil)
 			},
-			err: "unable to fetch referenced tweets: unable to fetch tweets",
+			err: "unable to fetch referenced tweets: expected 2 tweets to be returned",
 		},
 		{
 			name:    "invalid date in returned referenced tweet",
@@ -288,6 +319,9 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 					Return(&gotwitter.TweetLookupResponse{
 						Raw: &gotwitter.TweetRaw{
 							Tweets: []*gotwitter.TweetObj{
+								{
+									CreatedAt: "invalid_date",
+								},
 								{
 									CreatedAt: "invalid_date",
 								},
@@ -310,6 +344,18 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				client.EXPECT().GetTweets(mock.Anything, []string{"4321", "7654"}, expectedTweetLookupOpts).
 					Return(&gotwitter.TweetLookupResponse{
 						Raw: &gotwitter.TweetRaw{
+							Includes: &gotwitter.TweetRawIncludes{
+								Users: []*gotwitter.UserObj{
+									{
+										ID:       fakeAuthor1.ID,
+										UserName: fakeAuthor1.Username,
+									},
+									{
+										ID:       fakeAuthor2.ID,
+										UserName: fakeAuthor2.Username,
+									},
+								},
+							},
 							Tweets: []*gotwitter.TweetObj{
 								fakeReferencedTweet4321,
 								fakeReferencedTweet7654,
@@ -330,12 +376,41 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 				repository.EXPECT().GetTweet(mock.Anything, "1234").Return(nil, nil)
 				client.EXPECT().GetTweets(mock.Anything, []string{"1234"}, expectedTweetLookupOpts).
 					Return(&gotwitter.TweetLookupResponse{
-						Raw: &gotwitter.TweetRaw{Tweets: []*gotwitter.TweetObj{fakeCompleteTweet}},
+						Raw: &gotwitter.TweetRaw{
+							Includes: &gotwitter.TweetRawIncludes{
+								Media: []*gotwitter.MediaObj{
+									{
+										Key:  "photo1",
+										Type: string(fakeMedia.Type),
+										URL:  fakeMedia.URL.String(),
+									},
+								},
+								Users: []*gotwitter.UserObj{
+									{
+										ID:       fakeMainAuthor.ID,
+										UserName: fakeMainAuthor.Username,
+									},
+								},
+							},
+							Tweets: []*gotwitter.TweetObj{fakeCompleteTweet},
+						},
 					}, nil)
 				repository.EXPECT().GetTweet(mock.Anything, mock.Anything).Times(2).Return(nil, nil)
 				client.EXPECT().GetTweets(mock.Anything, []string{"4321", "7654"}, expectedTweetLookupOpts).
 					Return(&gotwitter.TweetLookupResponse{
 						Raw: &gotwitter.TweetRaw{
+							Includes: &gotwitter.TweetRawIncludes{
+								Users: []*gotwitter.UserObj{
+									{
+										ID:       fakeAuthor1.ID,
+										UserName: fakeAuthor1.Username,
+									},
+									{
+										ID:       fakeAuthor2.ID,
+										UserName: fakeAuthor2.Username,
+									},
+								},
+							},
 							Tweets: []*gotwitter.TweetObj{
 								fakeReferencedTweet4321,
 								fakeReferencedTweet7654,
@@ -352,11 +427,14 @@ func TestTweetService_SaveTweetAndReferences(t *testing.T) {
 			},
 			output: &twittermodels.Tweet{
 				ID:             fakeCompleteTweet.ID,
-				Text:           fakeCompleteTweet.Text,
+				Text:           "RT @someone: this text is gonna be truncated https://t.co/XaDNSVVB9l",
 				AuthorID:       fakeCompleteTweet.AuthorID,
 				AuthorUsername: fakeMainAuthor.Username,
 				Published:      fakeDate,
 				Sensitive:      fakeCompleteTweet.PossiblySensitive,
+				Medias: []twittermodels.TweetMedia{
+					fakeMedia,
+				},
 				ReferencedTweets: []twittermodels.Tweet{
 					*fakeReferencedTweetModel4321,
 					*fakeReferencedTweetModel7654,
