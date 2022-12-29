@@ -113,7 +113,7 @@ func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
 	}
 	userLogger.WithField("count", tweets.Meta.ResultCount).Trace("fetched tweets")
 	if tweets.Meta.ResultCount > 0 {
-		tx.Sampled = sentry.SampledUndefined
+		tx.Sampled = sentry.SampledTrue
 		for _, tweet := range tweets.Raw.Tweets {
 			err := c.handleTweet(ctx, user, tweet)
 			if err != nil {

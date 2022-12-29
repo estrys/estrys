@@ -3,6 +3,7 @@ package poller_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/getsentry/sentry-go"
 	"reflect"
 	"testing"
 	"time"
@@ -404,6 +405,10 @@ func Test_twitterPoller_Start(t *testing.T) {
 			fakeTweetService := mocksdomain.NewTweetService(t)
 			fakeWorker := mocksworker.NewBackgroundWorkerClient(t)
 			c.mocks(fakeTwitterClient, fakeUserRepo, fakeTweetService, cancel, fakeWorker)
+
+			// Workaround for https://github.com/getsentry/sentry-go/issues/518
+			_ = sentry.Init(sentry.ClientOptions{})
+
 			poller := poller.NewPoller(
 				mocks.NewNullLogger(),
 				fakeTwitterClient,
