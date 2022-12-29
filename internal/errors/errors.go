@@ -91,20 +91,17 @@ func HTTPErrorHandler(handler ErrorAwareHTTPHandler) func(w http.ResponseWriter,
 	return func(responseWriter http.ResponseWriter, request *http.Request) {
 		// Fetch the sentry hub from request context
 		// It can be null in testing context
-		hub := sentry.GetHubFromContext(request.Context())
-		if hub != nil {
-			hub.ConfigureScope(func(scope *sentry.Scope) {
-				scope.SetRequest(request)
-			})
-		}
+		ctx := request.Context()
+		hub := sentry.GetHubFromContext(ctx)
 		if hub != nil {
 			defer func() {
 				if recovered := recover(); recovered != nil {
+					responseWriter.WriteHeader(http.StatusInternalServerError)
 					if err, isErr := recovered.(error); isErr {
 						hub.CaptureException(err)
 						return
 					} else {
-						hub.Recover(recovered)
+						hub.RecoverWithContext(ctx, recovered)
 					}
 					log.Errorf("panic: %s %s", recovered, debug.Stack())
 				}

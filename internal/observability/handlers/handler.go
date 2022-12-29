@@ -14,16 +14,6 @@ import (
 func ObservabilityHandler(router *mux.Router, logger logger.Logger, handler http.HandlerFunc) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
-		defer func() {
-			if err := recover(); err != nil {
-				writer.WriteHeader(http.StatusInternalServerError)
-				hub := sentry.GetHubFromContext(ctx)
-				if hub != nil {
-					hub.RecoverWithContext(ctx, err)
-				}
-				logger.Error(err)
-			}
-		}()
 		hub := sentry.GetHubFromContext(ctx)
 		if hub == nil {
 			hub = sentry.CurrentHub().Clone()
