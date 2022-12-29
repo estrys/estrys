@@ -72,8 +72,11 @@ func BuildContainer() error {
 		},
 		Client: &http.Client{
 			Transport: &logger.HTTPLoggerRoundTripper{
-				RoundTripper: http.DefaultTransport,
-				Log:          dic.GetService[logger.Logger](),
+				RoundTripper: twitter.NewThrottledTransport(
+					http.DefaultTransport,
+					dic.GetService[logger.Logger](),
+				),
+				Log: dic.GetService[logger.Logger](),
 			},
 		},
 		Host: "https://api.twitter.com",

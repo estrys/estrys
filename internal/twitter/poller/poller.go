@@ -37,11 +37,6 @@ var (
 	ErrNoUserToPoll = errors.New("no user to poll")
 )
 
-const (
-	maxRequests = 1500
-	periodMins  = 15
-)
-
 func NewPoller(
 	log logger.Logger,
 	client twitter.TwitterClient,
@@ -176,20 +171,19 @@ func (c *twitterPoller) Start(ctx context.Context) error {
 
 	c.log.Debug("we have users to poll")
 
-	ticker := time.NewTicker(periodMins * time.Minute / maxRequests)
 	c.startTime = time.Now()
 
 	for {
 		select {
-		case <-ticker.C:
+		case <-ctx.Done():
+			c.log.Info("Stopping poller")
+			return nil
+		default:
 			err := c.FetchTweets(ctx)
 			if err != nil {
 				c.log.WithError(err).Error("an unexpected error happened during tweets fetching")
 				sentry.CaptureException(err)
 			}
-		case <-ctx.Done():
-			c.log.Info("Stopping poller")
-			return nil
 		}
 	}
 }
