@@ -55,6 +55,10 @@ func (suite *HTTPServerTestSuite) TestErrorHandler() {
 		wg.Done()
 	}()
 
+	// We need to wait for the server to be ready, we do not have a way to sync on that so far
+	// Increase this value if the test is flaky
+	time.Sleep(3 * time.Second)
+
 	resp, err := httpClient.Do(req)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
@@ -92,7 +96,7 @@ func (suite *HTTPServerTestSuite) TestPanic() {
 
 	// We need to wait for the server to be ready, we do not have a way to sync on that so far
 	// Increase this value if the test is flaky
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	resp, err := httpClient.Do(req)
 	require.NoError(t, err)
