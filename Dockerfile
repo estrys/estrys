@@ -7,7 +7,9 @@ RUN CGO_ENABLED=0 go build -o estrys ./cmd/estrys/
 RUN CGO_ENABLED=0 go build -o worker ./cmd/worker/
 
 FROM builder as dev
-RUN go install github.com/cosmtrek/air@v1.40.4
+RUN apk add bash &&\
+    go install github.com/cosmtrek/air@v1.40.4 &&\
+    go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.2
 ENTRYPOINT ["air"]
 
 FROM dev as worker-dev
