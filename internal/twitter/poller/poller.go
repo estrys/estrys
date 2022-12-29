@@ -8,7 +8,6 @@ import (
 	gotwitter "github.com/g8rswimmer/go-twitter/v2"
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/metrics"
@@ -36,14 +35,7 @@ type twitterPoller struct {
 	startTime   time.Time
 }
 
-var (
-	ErrNoUserToPoll    = errors.New("no user to poll")
-	fetchTweetsCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "fetch_tweet_iterations_total",
-		Help:        "The count of fetch tweets iterations run since startup.",
-		ConstLabels: prometheus.Labels{"version": "1234"},
-	})
-)
+var ErrNoUserToPoll = errors.New("no user to poll")
 
 const (
 	maxRequests = 1500
@@ -57,8 +49,6 @@ func NewPoller(
 	repo repository.UserRepository,
 	worker client.BackgroundWorkerClient,
 ) *twitterPoller {
-	reg := meter.GetRegistry()
-	reg.MustRegister(fetchTweetsCounter)
 	return &twitterPoller{
 		log:         log,
 		meter:       meter,
@@ -82,7 +72,8 @@ func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 }
 
 func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
-	fetchTweetsCounter.Inc()
+	m := c.meter.GetMetric(metrics.PollerFetchTweetIterationsCounter)
+	m.Inc()
 
 	defer func() {
 		if rec := recover(); rec != nil {

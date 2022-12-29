@@ -2,22 +2,27 @@ package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type Meter interface {
-	GetRegistry() *prometheus.Registry
+	GetMetric(name string) prometheus.Counter
 }
 
 type meter struct {
-	registry *prometheus.Registry
+	metrics map[string]prometheus.Counter
 }
 
 func NewMeter() *meter {
 	return &meter{
-		registry: prometheus.NewRegistry(),
+		metrics: map[string]prometheus.Counter{
+			PollerFetchTweetIterationsCounter: promauto.NewCounter(
+				prometheus.CounterOpts{Name: PollerFetchTweetIterationsCounter},
+			),
+		},
 	}
 }
 
-func (m *meter) GetRegistry() *prometheus.Registry {
-	return m.registry
+func (m *meter) GetMetric(name string) prometheus.Counter {
+	return m.metrics[name]
 }
