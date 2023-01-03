@@ -8,8 +8,10 @@ import (
 	gotwitter "github.com/g8rswimmer/go-twitter/v2"
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/metrics"
 	"github.com/estrys/estrys/internal/models"
 	"github.com/estrys/estrys/internal/observability"
 	"github.com/estrys/estrys/internal/repository"
@@ -24,6 +26,7 @@ type TwitterPoller interface {
 
 type twitterPoller struct {
 	log         logger.Logger
+	meter       metrics.Meter
 	twitter     twitter.TwitterClient
 	repo        repository.UserRepository
 	worker      client.BackgroundWorkerClient
@@ -33,9 +36,7 @@ type twitterPoller struct {
 	startTime   time.Time
 }
 
-var (
-	ErrNoUserToPoll = errors.New("no user to poll")
-)
+var ErrNoUserToPoll = errors.New("no user to poll")
 
 const (
 	maxRequests = 1500
@@ -44,12 +45,14 @@ const (
 
 func NewPoller(
 	log logger.Logger,
+	meter metrics.Meter,
 	client twitter.TwitterClient,
 	repo repository.UserRepository,
 	worker client.BackgroundWorkerClient,
 ) *twitterPoller {
 	return &twitterPoller{
 		log:         log,
+		meter:       meter,
 		twitter:     client,
 		repo:        repo,
 		worker:      worker,
@@ -70,6 +73,16 @@ func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 }
 
 func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
+	m, ok := c.meter.GetMetric("iteration_counter")
+	if !ok {
+		c.log.Panicf("cannot get metric: %s", "iteration")
+	}
+	counter, ok := m.(prometheus.Counter)
+	if !ok {
+		panic("wrong metric")
+	}
+	counter.Inc()
+
 	defer func() {
 		if rec := recover(); rec != nil {
 			err = errors.Errorf("got a panic during poller: %s: %s", rec, string(debug.Stack()))

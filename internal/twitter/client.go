@@ -11,6 +11,7 @@ import (
 
 	"github.com/estrys/estrys/internal/cache"
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/metrics"
 )
 
 type Authorizer struct {
@@ -63,13 +64,20 @@ type TwitterClient interface {
 type twitterClient struct {
 	twitter   Backend
 	log       logger.Logger
+	meter     metrics.Meter
 	userCache cache.Cache[twitter.UserObj]
 }
 
-func NewClient(log logger.Logger, cache cache.Cache[twitter.UserObj], backend Backend) *twitterClient {
+func NewClient(
+	log logger.Logger,
+	meter metrics.Meter,
+	cache cache.Cache[twitter.UserObj],
+	backend Backend,
+) *twitterClient {
 	return &twitterClient{
 		userCache: cache,
 		log:       log,
+		meter:     meter,
 		twitter:   backend,
 	}
 }

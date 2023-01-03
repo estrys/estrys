@@ -9,4 +9,5 @@ const (
 	UserOutboxRoute    string = "user_outbox"
 	UserInboxRoute     string = "user_inbox"
 	StatusRoute        string = "status"
+	MetricsRoute       string = "metrics"
 )

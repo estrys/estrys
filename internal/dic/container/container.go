@@ -20,6 +20,7 @@ import (
 	"github.com/estrys/estrys/internal/dic"
 	"github.com/estrys/estrys/internal/domain"
 	"github.com/estrys/estrys/internal/logger"
+	"github.com/estrys/estrys/internal/metrics"
 	"github.com/estrys/estrys/internal/repository"
 	"github.com/estrys/estrys/internal/router"
 	"github.com/estrys/estrys/internal/router/urlgenerator"
@@ -39,6 +40,7 @@ func BuildContainer() error {
 	conf := loader.Get()
 	_ = dic.Register[config.Config](conf)
 	_ = dic.Register[logger.Logger](logger.CreateLogger(&conf))
+	_ = dic.Register[metrics.Meter](metrics.NewRegistry())
 
 	_ = dic.Register[*mux.Router](router.GetRouter())
 	_ = dic.Register[urlgenerator.URLGenerator](urlgenerator.NewURLGenerator(conf,
@@ -80,6 +82,7 @@ func BuildContainer() error {
 	})
 	_ = dic.Register[twitter.TwitterClient](twitter.NewClient(
 		dic.GetService[logger.Logger](),
+		dic.GetService[metrics.Meter](),
 		dic.GetService[cache.Cache[gotwitter.UserObj]](),
 		dic.GetService[twitter.Backend](),
 	))
@@ -138,6 +141,7 @@ func BuildContainer() error {
 
 	_ = dic.Register[poller.TwitterPoller](poller.NewPoller(
 		dic.GetService[logger.Logger](),
+		dic.GetService[metrics.Meter](),
 		dic.GetService[twitter.TwitterClient](),
 		dic.GetService[repository.UserRepository](),
 		dic.GetService[client.BackgroundWorkerClient](),
