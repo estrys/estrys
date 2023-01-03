@@ -40,7 +40,7 @@ func BuildContainer() error {
 	conf := loader.Get()
 	_ = dic.Register[config.Config](conf)
 	_ = dic.Register[logger.Logger](logger.CreateLogger(&conf))
-	_ = dic.Register[metrics.Meter](metrics.NewMeter())
+	_ = dic.Register[metrics.Meter](metrics.NewRegistry())
 
 	_ = dic.Register[*mux.Router](router.GetRouter())
 	_ = dic.Register[urlgenerator.URLGenerator](urlgenerator.NewURLGenerator(conf,

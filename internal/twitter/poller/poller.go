@@ -8,6 +8,7 @@ import (
 	gotwitter "github.com/g8rswimmer/go-twitter/v2"
 	"github.com/getsentry/sentry-go"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/estrys/estrys/internal/logger"
 	"github.com/estrys/estrys/internal/metrics"
@@ -72,8 +73,15 @@ func (c *twitterPoller) RefreshUserList(ctx context.Context) error {
 }
 
 func (c *twitterPoller) FetchTweets(ctx context.Context) (err error) {
-	m := c.meter.GetMetric(metrics.PollerFetchTweetIterationsCounter)
-	m.Inc()
+	m, ok := c.meter.GetMetric("iteration_counter")
+	if !ok {
+		c.log.Panicf("cannot get metric: %s", "iteration")
+	}
+	counter, ok := m.(prometheus.Counter)
+	if !ok {
+		panic("wrong metric")
+	}
+	counter.Inc()
 
 	defer func() {
 		if rec := recover(); rec != nil {
